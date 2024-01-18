@@ -1,0 +1,34 @@
+version: '3'
+
+services:
+  nats-jetstream:
+    image: "nats:2.9.23-alpine3.18"
+    container_name: "548-nats-jetstream"
+    ports:
+      - "32803:32803"
+    environment:
+      - NATS_READY_FILE=/e2e_status/.nats_ready
+    volumes:
+      - ./e2e_status:/e2e_status
+    command:
+      - /bin/sh
+      - -c
+      - |
+        nats-server --port 32803 --js --http_port 8222 --store_dir /data &
+    networks:
+      - nats
+
+  gravity-dispatcher:
+    image: "brobridgehub/gravity-dispatcher:v0.0.2"
+    # restart: always
+    container_name: "gravity-dispatcher"
+    environment:
+      - GRAVITY_DISPATCHER_GRAVITY_HOST=nats-jetstream
+      - GRAVITY_DISPATCHER_GRAVITY_PORT=32803
+    depends_on:
+      - "nats-jetstream"
+    entrypoint: /bin/sh
+    networks:
+      - nats
+networks:
+  nats: {}
