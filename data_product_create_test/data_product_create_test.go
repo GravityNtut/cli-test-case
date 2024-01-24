@@ -2,13 +2,16 @@ package data_product_create
 
 import (
 	"bytes"
-	"fmt"
+	"context"
+	"errors"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/cucumber/godog"
+	"github.com/nats-io/nats.go"
 )
 
 func TestFeatures(t *testing.T) {
@@ -26,44 +29,83 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
-func ExecuteCommand(command string) (string, error, string) {
-	fmt.Println(command)
-	comArr := strings.Fields(command)
-	com := comArr[0]
-	args := comArr[1:]
-	cmd := exec.Command(com, args...)
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	outStr := stdout.String()
-	return outStr, err, stderr.String()
-}
-
-func ClearDataProduct() error {
-	return nil
-}
-
 func CreateSchema(arg *godog.DocString) error {
-	fmt.Println("here")
-	fmt.Println(arg.Content)
 	f, err := os.Create("schema.json")
 	f.WriteString(arg.Content)
 	defer f.Close()
 	return err
 }
 
-func CreateDataProductCommand(dataProduct string, description string) error {
-	exec.Command("../gravity-cli", "product", "create", dataProduct, "--desc", description, "--enabled")
-	return nil
+func CreateDataProductCommand(dataProduct string, description string, state string) error {
+	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "--desc", description, "--enabled", "--schema", "schema.json")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	outStr := stdout.String()
+
+	if strings.EqualFold(state, "success") {
+		if outStr == "Product \""+dataProduct+"\" was created\n" {
+			return nil
+		}
+		return errors.New("應該要創建成功")
+	} else if strings.EqualFold(state, "fail") {
+		if err != nil {
+			return nil
+		}
+		return errors.New("應該要創建失敗")
+	}
+	return err
+}
+
+func SearchDataProductByCLISuccess(dataProduct string) error {
+	cmd := exec.Command("../gravity-cli", "product", "info", dataProduct)
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	return err
+}
+
+func SearchDataProductByJetstreamSuccess(dataProduct string) error {
+	nc, _ := nats.Connect("nats://127.0.0.1:32803")
+	defer nc.Drain()
+
+	// Request the list of all streams
+	js, err := nc.JetStream()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Fetch the list of streams
+	streams := js.StreamNames()
+
+	for stream := range streams {
+		if stream == "GVT_default_DP_"+dataProduct {
+			return nil
+		}
+	}
+	return errors.New("jetstream裡未創建成功")
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
-	//ctx.Step(`沒有data product`, ClearDataProduct)
+	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
+		cmd := exec.Command("docker-compose", "-f", "./docker-compose.yaml", "up", "-d")
+		if err := cmd.Run(); err != nil {
+			log.Fatal(err)
+		}
+		return ctx, nil
+	})
 
-	ctx.Step(`schema.json=`, CreateSchema)
-	ctx.Step(`創建data product "([^"]*)" 註解 "([^"]*)"`, CreateDataProductCommand)
+	ctx.After(func(ctx context.Context, sc *godog.Scenario, err error) (context.Context, error) {
+		cmd := exec.Command("docker-compose", "down")
+		if err := cmd.Run(); err != nil {
+			log.Fatal(err)
+		}
+		return ctx, nil
+	})
+
+	ctx.Step(`^schema.json=$`, CreateSchema)
+	ctx.Step(`^創建data product "([^"]*)" 註解 "([^"]*)" "([^"]*)"$`, CreateDataProductCommand)
+	ctx.Step(`^使用gravity-cli 查詢 "([^"]*)" 成功$`, SearchDataProductByCLISuccess)
+	ctx.Step(`^使用nats jetstream 查詢 "([^"]*)" 成功$`, SearchDataProductByJetstreamSuccess)
 }
