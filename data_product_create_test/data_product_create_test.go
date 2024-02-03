@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -87,20 +88,44 @@ func SearchDataProductByJetstreamSuccess(dataProduct string) error {
 	return errors.New("jetstream裡未創建成功")
 }
 
-func InitializeScenario(ctx *godog.ScenarioContext) {
-	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
-		cmd := exec.Command("docker-compose", "-f", "./docker-compose.yaml", "up", "-d")
-		if err := cmd.Run(); err != nil {
-			log.Fatal(err)
-		}
-		return ctx, nil
-	})
+func ClearDataProducts() {
+	nc, _ := nats.Connect("nats://127.0.0.1:32803")
+	defer nc.Drain()
 
-	ctx.After(func(ctx context.Context, sc *godog.Scenario, err error) (context.Context, error) {
-		cmd := exec.Command("docker-compose", "down")
-		if err := cmd.Run(); err != nil {
-			log.Fatal(err)
-		}
+	// Request the list of all streams
+	js, err := nc.JetStream()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for kv := range js.KeyValueStoreNames() {
+		fmt.Println(kv)
+	}
+
+	for stream := range js.StreamNames() {
+		js.DeleteStream(stream)
+	}
+}
+
+func InitializeScenario(ctx *godog.ScenarioContext) {
+	// ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
+	// 	cmd := exec.Command("docker", "compose", "-f", "./docker-compose.yaml", "up", "-d")
+	// 	if err := cmd.Run(); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	return ctx, nil
+	// })
+
+	// ctx.After(func(ctx context.Context, sc *godog.Scenario, err error) (context.Context, error) {
+	// 	cmd := exec.Command("docker", "compose", "down")
+	// 	if err := cmd.Run(); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	return ctx, nil
+	// })
+
+	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
+		ClearDataProducts()
 		return ctx, nil
 	})
 
