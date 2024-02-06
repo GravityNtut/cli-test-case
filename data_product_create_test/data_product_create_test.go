@@ -3,6 +3,7 @@ package data_product_create
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -15,7 +16,28 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+type Config struct {
+	JetstreamURL string
+}
+
+var config Config = Config{JetstreamURL: "172.25.19.180:32803"}
+
+func LoadConfig() error {
+	str, err := os.ReadFile("../config/config.json")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(str))
+	err = json.Unmarshal([]byte(str), &config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func TestFeatures(t *testing.T) {
+	// LoadConfig()
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
 		Options: &godog.Options{
@@ -38,13 +60,16 @@ func CreateSchema(arg *godog.DocString) error {
 }
 
 func CreateDataProductCommand(dataProduct string, description string, state string) error {
-	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "--desc", description, "--enabled", "--schema", "schema.json")
+	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "--desc", description, "--enabled", "--schema", "schema.json", "-s", config.JetstreamURL)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
 	err := cmd.Run()
 	outStr := stdout.String()
+
+	fmt.Println("stdout: ", stdout.String())
+	fmt.Println("stderr: ", stderr.String())
 
 	if strings.EqualFold(state, "success") {
 		if outStr == "Product \""+dataProduct+"\" was created\n" {
@@ -61,23 +86,24 @@ func CreateDataProductCommand(dataProduct string, description string, state stri
 }
 
 func SearchDataProductByCLISuccess(dataProduct string) error {
-	cmd := exec.Command("../gravity-cli", "product", "info", dataProduct)
-	var stdout bytes.Buffer
+	cmd := exec.Command("../gravity-cli", "product", "info", dataProduct, "-s", config.JetstreamURL)
+	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
 	err := cmd.Run()
 	return err
 }
 
 func SearchDataProductByJetstreamSuccess(dataProduct string) error {
-	nc, _ := nats.Connect("nats://127.0.0.1:32803")
-	defer nc.Drain()
+	nc, _ := nats.Connect("nats://" + config.JetstreamURL)
+	defer nc.Close()
 
-	// Request the list of all streams
 	js, err := nc.JetStream()
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Fetch the list of streams
+
 	streams := js.StreamNames()
 
 	for stream := range streams {
@@ -89,48 +115,26 @@ func SearchDataProductByJetstreamSuccess(dataProduct string) error {
 }
 
 func ClearDataProducts() {
-	nc, _ := nats.Connect("nats://127.0.0.1:32803")
-	defer nc.Drain()
+	nc, _ := nats.Connect("nats://" + config.JetstreamURL)
+	defer nc.Close()
 
-	// Request the list of all streams
 	js, err := nc.JetStream()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for kv := range js.KeyValueStoreNames() {
-		fmt.Println(kv)
-	}
-
-	for stream := range js.StreamNames() {
-		js.DeleteStream(stream)
-	}
+	js.PurgeStream("KV_GVT_default_PRODUCT")
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
-	// ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
-	// 	cmd := exec.Command("docker", "compose", "-f", "./docker-compose.yaml", "up", "-d")
-	// 	if err := cmd.Run(); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	return ctx, nil
-	// })
-
-	// ctx.After(func(ctx context.Context, sc *godog.Scenario, err error) (context.Context, error) {
-	// 	cmd := exec.Command("docker", "compose", "down")
-	// 	if err := cmd.Run(); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	return ctx, nil
-	// })
 
 	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
 		ClearDataProducts()
 		return ctx, nil
 	})
 
-	ctx.Step(`^schema=$`, CreateSchema)
-	ctx.Step(`^創建data product "([^"]*)" 註解 "([^"]*)" "([^"]*)"$`, CreateDataProductCommand)
-	ctx.Step(`^使用gravity-cli 查詢 "([^"]*)" 成功$`, SearchDataProductByCLISuccess)
-	ctx.Step(`^使用nats jetstream 查詢 "([^"]*)" 成功$`, SearchDataProductByJetstreamSuccess)
+	ctx.Given(`^schema=$`, CreateSchema)
+	ctx.When(`^創建data product "([^"]*)" 註解 "([^"]*)" "([^"]*)"$`, CreateDataProductCommand)
+	ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 成功$`, SearchDataProductByCLISuccess)
+	ctx.Then(`^使用nats jetstream 查詢 "([^"]*)" 成功$`, SearchDataProductByJetstreamSuccess)
 }
