@@ -19,6 +19,8 @@ type Config struct {
 	JetstreamURL string
 }
 
+var config Config = Config{JetstreamURL: "0.0.0.0:32803"}
+
 func TestFeatures(t *testing.T) {
 	// LoadConfig()
 	suite := godog.TestSuite{
