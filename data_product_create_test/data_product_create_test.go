@@ -3,7 +3,6 @@ package data_product_create
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -18,22 +17,6 @@ import (
 
 type Config struct {
 	JetstreamURL string
-}
-
-var config Config = Config{JetstreamURL: "172.25.19.180:32803"}
-
-func LoadConfig() error {
-	str, err := os.ReadFile("../config/config.json")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(str))
-	err = json.Unmarshal([]byte(str), &config)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func TestFeatures(t *testing.T) {
