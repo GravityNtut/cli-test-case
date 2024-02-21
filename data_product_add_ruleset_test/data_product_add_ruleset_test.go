@@ -1,11 +1,13 @@
 package data_product_ruleset_add
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/cucumber/godog"
@@ -16,7 +18,13 @@ type Config struct {
 	JetstreamURL string
 }
 
+type CommandResult struct {
+	Stdout string
+	Stderr string
+}
+
 var config Config = Config{JetstreamURL: "0.0.0.0:32803"}
+var cmdResult CommandResult
 
 func LoadConfig() error {
 	str, err := os.ReadFile("../config/config.json")
@@ -45,6 +53,28 @@ func TestFeatures(t *testing.T) {
 		t.Fatal("non-zero status returned, failed to run feature tests")
 	}
 }
+
+func AddRulesetCommand(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string) error {
+	cmd := exec.Command("../gravity-cli", "product", "ruleset", "add", dataProduct, ruleset, "--event", event, "--method", method, "--pk", pk, "--desc", desc, "--handler", "./assets/"+handler, "--schema", "./assets/"+schema, "-s", config.JetstreamURL)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	cmd.Run()
+
+	cmdResult.Stdout = stdout.String()
+	cmdResult.Stderr = stderr.String()
+
+	return nil
+}
+
+func AddRulesetCommandFailed() error {
+	if cmdResult.Stdout == "" && cmdResult.Stderr != "" {
+		return nil
+	}
+	return fmt.Errorf("ruleset 創建應該要失敗")
+}
+
 func ClearDataProducts() {
 	nc, _ := nats.Connect("nats://" + config.JetstreamURL)
 	defer nc.Close()
@@ -63,5 +93,6 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		ClearDataProducts()
 		return ctx, nil
 	})
-
+	ctx.Step(`^"([^"]*)" 創建ruleset "([^"]*)" method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)"$`, AddRulesetCommand)
+	ctx.Step(`^ruleset 創建失敗$`, ClearDataProducts)
 }
