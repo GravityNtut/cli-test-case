@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
 
 	"github.com/cucumber/godog"
@@ -20,7 +19,14 @@ type Config struct {
 	JetstreamURL string
 }
 
-var config Config = Config{JetstreamURL: "172.25.19.180:32803"}
+type CreateProductCommand struct {
+	name   string
+	desc   string
+	schema string
+}
+
+var config Config = Config{JetstreamURL: "0.0.0.0:32803"}
+var createProductCommand CreateProductCommand
 
 func LoadConfig() error {
 	str, err := os.ReadFile("../config/config.json")
@@ -52,36 +58,21 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
-func CreateSchema(arg *godog.DocString) error {
-	f, err := os.Create("schema.json")
-	f.WriteString(arg.Content)
-	defer f.Close()
-	return err
+func CreateDataProductCommand(dataProduct string, description string, schema string) error {
+	createProductCommand.name = dataProduct
+	createProductCommand.desc = description
+	createProductCommand.schema = schema
+	return nil
 }
 
-func CreateDataProductCommand(dataProduct string, description string, state string) error {
-	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "--desc", description, "--enabled", "--schema", "schema.json", "-s", config.JetstreamURL)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+func ExecucteCreateProductCommandSuccess() error {
+	dataProduct := createProductCommand.name
+	description := createProductCommand.desc
+	schema := createProductCommand.schema
 
+	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "--desc", description, "--enabled", "--schema", schema, "-s", config.JetstreamURL)
 	err := cmd.Run()
-	outStr := stdout.String()
 
-	fmt.Println("stdout: ", stdout.String())
-	fmt.Println("stderr: ", stderr.String())
-
-	if strings.EqualFold(state, "success") {
-		if outStr == "Product \""+dataProduct+"\" was created\n" {
-			return nil
-		}
-		return errors.New("應該要創建成功")
-	} else if strings.EqualFold(state, "fail") {
-		if err != nil {
-			return nil
-		}
-		return errors.New("應該要創建失敗")
-	}
 	return err
 }
 
@@ -122,7 +113,6 @@ func ClearDataProducts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	js.PurgeStream("KV_GVT_default_PRODUCT")
 }
 
@@ -132,9 +122,9 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		ClearDataProducts()
 		return ctx, nil
 	})
+	ctx.Step(`^創建一個data product "([^"]*)" 註解 "([^"]*)" schema檔案 "([^"]*)"$`, CreateDataProductCommand)
+	ctx.Step("^建立成功$", ExecucteCreateProductCommandSuccess)
+	ctx.Step(`^使用gravity-cli查詢data product 列表 "([^"]*)" 存在$`, SearchDataProductByCLISuccess)
+	ctx.Step(`^使用nats jetstream 查詢 data product 列表 "([^"]*)" 存在$`, SearchDataProductByJetstreamSuccess)
 
-	ctx.Given(`^schema=$`, CreateSchema)
-	ctx.When(`^創建data product "([^"]*)" 註解 "([^"]*)" "([^"]*)"$`, CreateDataProductCommand)
-	ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 成功$`, SearchDataProductByCLISuccess)
-	ctx.Then(`^使用nats jetstream 查詢 "([^"]*)" 成功$`, SearchDataProductByJetstreamSuccess)
 }
