@@ -54,6 +54,12 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
+func CreateDataProduct(dataProduct string) error {
+	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "-s", config.JetstreamURL)
+	cmd.Run()
+	return nil
+}
+
 func AddRulesetCommand(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string) error {
 	cmd := exec.Command("../gravity-cli", "product", "ruleset", "add", dataProduct, ruleset, "--event", event, "--method", method, "--pk", pk, "--desc", desc, "--handler", "./assets/"+handler, "--schema", "./assets/"+schema, "-s", config.JetstreamURL)
 	var stdout, stderr bytes.Buffer
@@ -93,6 +99,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		ClearDataProducts()
 		return ctx, nil
 	})
-	ctx.Step(`^"([^"]*)" 創建ruleset "([^"]*)" method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)"$`, AddRulesetCommand)
-	ctx.Step(`^ruleset 創建失敗$`, ClearDataProducts)
+	ctx.Given(`^已有data product "([^"]*)"$`, CreateDataProduct)
+
+	ctx.When(`^"([^"]*)" 創建ruleset "([^"]*)" method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)"$`, AddRulesetCommand)
+	ctx.Then(`^ruleset 創建失敗$`, AddRulesetCommandFailed)
 }
