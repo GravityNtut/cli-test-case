@@ -19,14 +19,13 @@ type Config struct {
 	JetstreamURL string
 }
 
-type CreateProductCommand struct {
-	name   string
-	desc   string
-	schema string
+type CommandResult struct {
+	stdout string
+	stderr string
 }
 
 var config Config = Config{JetstreamURL: "0.0.0.0:32803"}
-var createProductCommand CreateProductCommand
+var commandResult CommandResult
 
 func LoadConfig() error {
 	str, err := os.ReadFile("../config/config.json")
@@ -59,21 +58,63 @@ func TestFeatures(t *testing.T) {
 }
 
 func CreateDataProductCommand(dataProduct string, description string, schema string) error {
-	createProductCommand.name = dataProduct
-	createProductCommand.desc = description
-	createProductCommand.schema = schema
+
+	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "--desc", description, "--enabled", "--schema", "./assets/"+schema, "-s", config.JetstreamURL)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	cmd.Run()
+
+	commandResult.stdout = stdout.String()
+	commandResult.stderr = stderr.String()
 	return nil
 }
 
-func ExecucteCreateProductCommandSuccess() error {
-	dataProduct := createProductCommand.name
-	description := createProductCommand.desc
-	schema := createProductCommand.schema
+func CreateDataProductCommandNoDesc(dataProduct string, schema string) error {
+	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "--enabled", "--schema", "./assets/"+schema, "-s", config.JetstreamURL)
 
-	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "--desc", description, "--enabled", "--schema", schema, "-s", config.JetstreamURL)
-	err := cmd.Run()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
-	return err
+	cmd.Run()
+
+	commandResult.stdout = stdout.String()
+	commandResult.stderr = stderr.String()
+	return nil
+}
+
+func CreateDataProductCommandNoSchema(dataProduct string, description string) error {
+	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "--desc", description, "--enabled", "-s", config.JetstreamURL)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	cmd.Run()
+
+	commandResult.stdout = stdout.String()
+	commandResult.stderr = stderr.String()
+	return nil
+}
+
+func CreateDateProductCommandSuccess(productName string) error {
+	outStr := commandResult.stdout
+	if outStr == "Product \""+productName+"\" was created\n" {
+		return nil
+	}
+	return errors.New("Cli回傳訊息錯誤")
+}
+
+func CreateDateProductCommandFail() error {
+	outErr := commandResult.stderr
+	outStr := commandResult.stdout
+	if outStr == "" && outErr != "" {
+		return nil
+	}
+	return errors.New("Cli回傳訊息錯誤")
 }
 
 func SearchDataProductByCLISuccess(dataProduct string) error {
@@ -123,7 +164,10 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 	ctx.Step(`^創建一個data product "([^"]*)" 註解 "([^"]*)" schema檔案 "([^"]*)"$`, CreateDataProductCommand)
-	ctx.Step("^建立成功$", ExecucteCreateProductCommandSuccess)
+	ctx.Step(`^創建一個data product "([^"]*)" schema檔案 "([^"]*)"$`, CreateDataProductCommandNoDesc)
+	ctx.Step(`^創建一個data product "([^"]*)" 註解 "([^"]*)"$`, CreateDataProductCommandNoSchema)
+	ctx.Step(`^Cli回傳"([^"]*)"建立成功$`, CreateDateProductCommandSuccess)
+	ctx.Step(`^Cli回傳建立失敗$`, CreateDateProductCommandFail)
 	ctx.Step(`^使用gravity-cli查詢data product 列表 "([^"]*)" 存在$`, SearchDataProductByCLISuccess)
 	ctx.Step(`^使用nats jetstream 查詢 data product 列表 "([^"]*)" 存在$`, SearchDataProductByJetstreamSuccess)
 
