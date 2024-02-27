@@ -1,5 +1,9 @@
 Feature: Data Product ruleset add
 
+Scenario:
+    Given 已開啟服務nats
+    Given 已開啟服務dispatcher
+
 #Scenario
     Scenario: 針對data product加入ruleset 成功情境
     Given 已有data product "<productName>"
@@ -11,6 +15,7 @@ Feature: Data Product ruleset add
         | drink       | drinkCreated  | create  | drinkCreated  |   id          | description     |     handler.js       |      schema.json            |
         | drink       | drinkUpdated  | update  | drinkUpdated  |   [ignore]    | [ignore]        |     [ignore]         |      [ignore]               |
         | drink       | drinkDeleted  | delete  | drinkDeleted  |   [a]x256     | [a]x4000        |     [ignore]         |      [ignore]               |
+        |   drink     | [a]x10        | delete  | drinkDeleted  |   [a]x256     | [a]x4000        |     [ignore]         |      [ignore]               |
 
 #Scenario
     Scenario: 針對data product加入ruleset 重複建立情境

@@ -98,6 +98,8 @@ func ProcessString(str string) string {
 }
 
 func AddRulesetCommand(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string) error {
+	dataProduct = ProcessString(dataProduct)
+	ruleset = ProcessString(ruleset)
 	commandString := "../gravity-cli product ruleset add " + dataProduct + " " + ruleset
 	if event != "[ignore]" {
 		event := ProcessString(event)
@@ -157,6 +159,8 @@ func AddRulesetCommandSuccess() error {
 }
 
 func SearchRulesetByCLISuccess(dataProduct string, ruleset string) error {
+	dataProduct = ProcessString(dataProduct)
+	ruleset = ProcessString(ruleset)
 	cmd := exec.Command("../gravity-cli", "product", "ruleset", "info", dataProduct, ruleset, "-s", config.JetstreamURL)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -166,17 +170,40 @@ func SearchRulesetByCLISuccess(dataProduct string, ruleset string) error {
 	return err
 }
 
+func AssertErrorMessages(expected string) error {
+	// Todo
+	// if cmdResult.Stderr == expected {
+	// 	return nil
+	// }
+	// return fmt.Errorf("應有錯誤訊息: %s", expected)
+	return nil
+}
+
+func CheckNatsService() error {
+	nc, err := nats.Connect("nats://" + config.JetstreamURL)
+	defer nc.Close()
+	return err
+}
+
+func checkDispatcherService() error {
+	return nil
+}
+
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
 		ClearDataProducts()
 		return ctx, nil
 	})
+	ctx.Given(`^已開啟服務nats$`, CheckNatsService)
+	ctx.Given(`^已開啟服務dispatcher$`, checkDispatcherService)
+
 	ctx.Given(`^已有data product "([^"]*)"$`, CreateDataProduct)
 
 	ctx.When(`^"([^"]*)" 創建ruleset "([^"]*)" method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)"$`, AddRulesetCommand)
 	ctx.Then(`^ruleset 創建失敗$`, AddRulesetCommandFailed)
 
 	ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
-	ctx.Step(`^使用gravity-cli 查詢 "([^"]*)" 的 "([^"]*)" 成功$`, SearchRulesetByCLISuccess)
+	ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 的 "([^"]*)" 成功$`, SearchRulesetByCLISuccess)
+	ctx.Then(`^應有錯誤訊息 "([^"]*)"$`, AssertErrorMessages)
 }
