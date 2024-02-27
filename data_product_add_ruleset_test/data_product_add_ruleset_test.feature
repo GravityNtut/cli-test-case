@@ -1,72 +1,42 @@
 Feature: Data Product ruleset add
 
 #Scenario
-    Scenario: Extension 7 event與method皆為null,space,ignore
+    Scenario: 針對data product加入ruleset 成功情境
     Given 已有data product "<productName>"
     When "<productName>" 創建ruleset "<ruleset>" method "<method>" event "<event>" pk "<pk>" desc "<desc>" handler "<handler_script>" schema "<schema>"
-    Then ruleset 創建失敗
-    And 應有event與method未填入的錯誤訊息
+    Then ruleset 創建成功
+    Then 使用gravity-cli 查詢 "<productName>" 的 "<ruleset>" 成功
     Examples:
-        | productName | ruleset       | method  | event         | pk |  desc           | handler_script     |      schema               |
-        | drink       | drinkCreated  |         |               | id | description     |     handler.js     |      schema.json          |
+        | productName | ruleset       | method  | event         |   pk          |  desc           | handler_script       |      schema                 |
+        | drink       | drinkCreated  | create  | drinkCreated  |   id          | description     |     handler.js       |      schema.json            |
+        | drink       | drinkUpdated  | update  | drinkUpdated  |   [ignore]    | [ignore]        |     [ignore]         |      [ignore]               |
+        | drink       | drinkDeleted  | delete  | drinkDeleted  |   [a]x256     | [a]x4000        |     [ignore]         |      [ignore]               |
 
 #Scenario
-    Scenario: Extension 8 schema檔案找不到
+    Scenario: 針對data product加入ruleset 重複建立情境
     Given 已有data product "<productName>"
     When "<productName>" 創建ruleset "<ruleset>" method "<method>" event "<event>" pk "<pk>" desc "<desc>" handler "<handler_script>" schema "<schema>"
+    Then ruleset 創建成功
+    Then 使用gravity-cli 查詢 "<productName>" 的 "<ruleset>" 成功
+    When "<productName>" 創建ruleset "<ruleset>" method "<method>" event "<event>" pk "<pk>" desc "<desc>" handler "<handler_script>" schema "<schema>"
     Then ruleset 創建失敗
-    And 應有schema檔案找不到的錯誤訊息
     Examples:
-        | productName | ruleset       | method  | event         | pk |  desc           | handler_script     |      schema               |
-        | drink       | drinkCreated  | create  | drinkCreated  | id | description     |     handler.js     |   not_exist.json          |
+        | productName | ruleset       | method  | event         |   pk          |  desc           | handler_script       |      schema                 |
+        | drink       | drinkCreated  | create  | drinkCreated  |   id          | description     |     handler.js       |      schema.json            |
 
 #Scenario
-    Scenario: Extension 9 schema錯誤json格式
+    Scenario Outline: 針對data product加入ruleset 失敗情境
     Given 已有data product "<productName>"
     When "<productName>" 創建ruleset "<ruleset>" method "<method>" event "<event>" pk "<pk>" desc "<desc>" handler "<handler_script>" schema "<schema>"
     Then ruleset 創建失敗
-    And 應有schema格式錯誤的錯誤訊息
+    And 應有錯誤訊息 "<error_message>"
     Examples:
-        | productName | ruleset       | method  | event         | pk |  desc           | handler_script     |      schema               |
-        | drink       | drinkCreated  | create  | drinkCreated  | id | description     |     handler.js     | fail_schema.json          |
-
-#Scenario
-    Scenario: Extension 10 handler檔案找不到,space或null
-    Given 已有data product "<productName>"
-    When "<productName>" 創建ruleset "<ruleset>" method "<method>" event "<event>" pk "<pk>" desc "<desc>" handler "<handler_script>" schema "<schema>"
-    Then ruleset 創建失敗
-    And 應有handler檔案找不到的錯誤訊息
-    Examples:
-        | productName | ruleset       | method  | event         | pk |  desc           | handler_script | schema               |
-        | drink       | drinkCreated  | create  | drinkCreated  | id | description     |     abc.js     | schema.json          |
-        | drink       | drinkCreated  | create  | drinkCreated  | id | description     |                | schema.json          |
-
-# #Scenario
-#     Scenario: Extension 11 desc中輸入null
-#     Given 已有data product "<productName>"
-#     When "<productName>" 創建ruleset "<ruleset>" method "<method>" event "<event>" pk "<pk>" desc "<desc>" handler "<handler_script>" schema "<schema>"
-#     Then ruleset 創建失敗
-#     And 應有desc為空的錯誤訊息
-#     Examples:
-#         | productName | ruleset       | method  | event         | pk | desc | handler_script | schema               |
-#         | drink       | drinkCreated  | create  | drinkCreated  | id |      |     handler.js | schema.json          |
-
-# #Scenario
-#     Scenario: Extension 12 pk中輸入空白或null
-#     Given 已有data product "<productName>"
-#     When "<productName>" 創建ruleset "<ruleset>" method "<method>" event "<event>" pk "<pk>" desc "<desc>" handler "<handler_script>" schema "<schema>"
-#     Then ruleset 創建失敗
-#     And 應有pk為空的錯誤訊息
-#     Examples:
-#         | productName | ruleset       | method  | event         | pk | desc           | handler_script | schema               |
-#         | drink       | drinkCreated  | create  | drinkCreated  |    |  This is desc  |     handler.js | schema.json          |
-
-# #Scenario
-#     Scenario: Extension 13 pk與desc皆為空白或null
-#     Given 已有data product "<productName>"
-#     When "<productName>" 創建ruleset "<ruleset>" method "<method>" event "<event>" pk "<pk>" desc "<desc>" handler "<handler_script>" schema "<schema>"
-#     Then ruleset 創建失敗
-#     And 應有pk 和 desc為空的錯誤訊息
-#     Examples:
-#         | productName | ruleset       | method  | event         | pk | desc | handler_script | schema               |
-#         | drink       | drinkCreated  | create  | drinkCreated  |    |      |     handler.js | schema.json          |
+        | productName | ruleset       | method  | event         |   pk     |  desc           | handler_script     |      schema               |              error_message             |
+        | drink       | drinkCreated  |         |               |   id     | description     |     handler.js     |      schema.json          |                                        |  
+        | drink       | drinkCreated  | create  | drinkCreated  |   id     | description     |     handler.js     |   not_exist.json          |                                        |  
+        | drink       | drinkCreated  | create  | drinkCreated  |   id     | description     |     handler.js     | fail_schema.json          |                                        |  
+        | drink       | drinkCreated  | create  | drinkCreated  |   id     | description     |     abc.js         | schema.json               |                                        |  
+        | drink       | drinkCreated  | create  | drinkCreated  |   id     | description     |                    | schema.json               |                                        |  
+        # | drink       | drinkCreated  | create  | drinkCreated  |          |                 |     handler.js     | schema.json               |                                        |  
+        # | drink       | drinkCreated  | create  | drinkCreated  |          |  This is descvv |     handler.js     | schema.json               |                                        |  
+        # | drink       | drinkCreated  | create  | drinkCreated  |          |    [null]       |     handler.js     | schema.json               |                                        |  

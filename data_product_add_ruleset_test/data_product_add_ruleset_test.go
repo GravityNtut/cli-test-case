@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
+	"strconv"
 	"testing"
 
 	"github.com/cucumber/godog"
@@ -19,6 +21,7 @@ type Config struct {
 }
 
 type CommandResult struct {
+	err    error
 	Stdout string
 	Stderr string
 }
@@ -60,22 +63,75 @@ func CreateDataProduct(dataProduct string) error {
 	return nil
 }
 
-func AddRulesetCommand(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string) error {
-	cmd := exec.Command("../gravity-cli", "product", "ruleset", "add", dataProduct, ruleset, "--event", event, "--method", method, "--pk", pk, "--desc", desc, "--handler", "./assets/"+handler, "--schema", "./assets/"+schema, "-s", config.JetstreamURL)
+func ExecuteShell(command string) error {
+	f, err := os.Create("command.sh")
+	f.WriteString(command)
+	defer f.Close()
+
+	cmd := exec.Command("sh", "./command.sh")
+
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	cmd.Run()
+	cmdResult.err = cmd.Run()
 
 	cmdResult.Stdout = stdout.String()
 	cmdResult.Stderr = stderr.String()
+	return err
+}
 
+func ProcessString(str string) string {
+	re := regexp.MustCompile(`\[(\S+)\]x(\d+)`)
+
+	parts := re.FindStringSubmatch(str)
+	if parts == nil {
+		return str
+	}
+	chr := parts[1]
+	times, _ := strconv.Atoi(parts[2])
+	completeString := ""
+	for i := 0; i < times; i++ {
+		completeString += chr
+	}
+	return completeString
+}
+
+func AddRulesetCommand(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string) error {
+	commandString := "../gravity-cli product ruleset add " + dataProduct + " " + ruleset
+	if event != "[ignore]" {
+		event := ProcessString(event)
+		commandString += " --event " + event
+	}
+	if method != "[ignore]" {
+		method := ProcessString(method)
+		commandString += " --method " + method
+	}
+	if pk != "[ignore]" {
+		pk := ProcessString(pk)
+		commandString += " --pk " + pk
+	}
+	if desc != "[ignore]" {
+		if desc == "[null]" {
+			commandString += " --desc "
+		} else {
+			desc := ProcessString(desc)
+			commandString += " --desc \"" + desc + "\""
+		}
+	}
+	if handler != "[ignore]" {
+		commandString += " --handler ./assets/" + handler
+	}
+	if schema != "[ignore]" {
+		commandString += " --schema ./assets/" + schema
+	}
+	commandString += " -s " + config.JetstreamURL
+	ExecuteShell(commandString)
 	return nil
 }
 
 func AddRulesetCommandFailed() error {
-	if cmdResult.Stdout == "" && cmdResult.Stderr != "" {
+	if cmdResult.err != nil {
 		return nil
 	}
 	return fmt.Errorf("ruleset 創建應該要失敗")
@@ -93,6 +149,23 @@ func ClearDataProducts() {
 	js.PurgeStream("KV_GVT_default_PRODUCT")
 }
 
+func AddRulesetCommandSuccess() error {
+	if cmdResult.err == nil {
+		return nil
+	}
+	return fmt.Errorf("ruleset 創建應該要成功")
+}
+
+func SearchRulesetByCLISuccess(dataProduct string, ruleset string) error {
+	cmd := exec.Command("../gravity-cli", "product", "ruleset", "info", dataProduct, ruleset, "-s", config.JetstreamURL)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	return err
+}
+
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
@@ -103,4 +176,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.When(`^"([^"]*)" 創建ruleset "([^"]*)" method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)"$`, AddRulesetCommand)
 	ctx.Then(`^ruleset 創建失敗$`, AddRulesetCommandFailed)
+
+	ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
+	ctx.Step(`^使用gravity-cli 查詢 "([^"]*)" 的 "([^"]*)" 成功$`, SearchRulesetByCLISuccess)
 }
