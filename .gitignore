@@ -19,5 +19,4 @@
 
 # Go workspace file
 go.work
-schema.json
-handler.js
+command.sh
