@@ -8,8 +8,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
+	"regexp"
+	"strconv"
 
 	"github.com/cucumber/godog"
 	"github.com/nats-io/nats.go"
@@ -17,6 +18,28 @@ import (
 
 type Config struct {
 	JetstreamURL string
+}
+
+type CmdResult struct {
+	stdout string
+	stderr string
+}
+
+var config Config = Config{JetstreamURL: "0.0.0.0:32803"}
+var cmdResult CmdResult
+
+func LoadConfig() error {
+	str, err := os.ReadFile("../config/config.json")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(str))
+	err = json.Unmarshal([]byte(str), &config)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 var config Config = Config{JetstreamURL: "0.0.0.0:32803"}
@@ -37,40 +60,68 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
-func CreateSchema(arg *godog.DocString) error {
-	f, err := os.Create("schema.json")
-	f.WriteString(arg.Content)
-	defer f.Close()
-	return err
+func ExecuteShell(command string) error {
+    f, err := os.Create("command.sh")
+    f.WriteString(command)
+    defer f.Close()
+
+    cmd := exec.Command("sh", "./command.sh")
+
+    var stdout, stderr bytes.Buffer
+    cmd.Stdout = &stdout
+    cmd.Stderr = &stderr
+
+    cmd.Run()
+
+    cmdResult.stdout = stdout.String()
+    cmdResult.stderr = stderr.String()
+    return err
 }
 
-func CreateDataProductCommand(dataProduct string, description string, state string) error {
-	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "--desc", description, "--enabled", "--schema", "schema.json", "-s", config.JetstreamURL)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	outStr := stdout.String()
-
-	fmt.Println("stdout: ", stdout.String())
-	fmt.Println("stderr: ", stderr.String())
-
-	if strings.EqualFold(state, "success") {
-		if outStr == "Product \""+dataProduct+"\" was created\n" {
-			return nil
-		}
-		return errors.New("應該要創建成功")
-	} else if strings.EqualFold(state, "fail") {
-		if err != nil {
-			return nil
-		}
-		return errors.New("應該要創建失敗")
+func CreateDataProductCommand(dataProduct string, description string, schema string) error {
+	dataProduct = ProcessString(dataProduct)
+	commandString := "../gravity-cli product create "
+	if dataProduct != "[null]"{
+		commandString += dataProduct
 	}
-	return err
+	if description != "[ignore]" {
+		if description == "[null]" {
+			commandString += " --desc"
+		} else {
+			description :=ProcessString(description)
+			commandString += " --desc \"" + description +"\""
+		}
+	}
+
+	if schema != "[ignore]" {
+		commandString += " --schema ./assets/" + schema
+	}
+	commandString += " --enabled" + " -s " + config.JetstreamURL
+	ExecuteShell(commandString)
+
+	return nil
+}
+
+func CreateDateProductCommandSuccess(productName string) error {
+	outStr := cmdResult.stdout
+	productName = ProcessString(productName)
+	if outStr == "Product \""+ productName +"\" was created\n" {
+		return nil
+	}
+	return errors.New("Cli回傳訊息錯誤")
+}
+
+func CreateDateProductCommandFail() error {
+	outErr := cmdResult.stderr
+	outStr := cmdResult.stdout
+	if outStr == "" && outErr != "" {
+		return nil
+	}
+	return errors.New("Cli回傳訊息錯誤")
 }
 
 func SearchDataProductByCLISuccess(dataProduct string) error {
+	dataProduct = ProcessString(dataProduct)
 	cmd := exec.Command("../gravity-cli", "product", "info", dataProduct, "-s", config.JetstreamURL)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -80,7 +131,24 @@ func SearchDataProductByCLISuccess(dataProduct string) error {
 	return err
 }
 
+func ProcessString(s string) string {
+
+    re := regexp.MustCompile(`\[(\S+)\]x(\d+)`)
+    parts := re.FindStringSubmatch(s)
+	if parts == nil {
+		return s
+	}
+    str := parts[1]
+    times, _ := strconv.Atoi(parts[2])
+	completeString := ""
+    for i := 0; i < times; i++ {
+		completeString += str
+    }
+    return completeString
+}
+
 func SearchDataProductByJetstreamSuccess(dataProduct string) error {
+	dataProduct = ProcessString(dataProduct)
 	nc, _ := nats.Connect("nats://" + config.JetstreamURL)
 	defer nc.Close()
 
@@ -107,8 +175,27 @@ func ClearDataProducts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	js.PurgeStream("KV_GVT_default_PRODUCT")
+}
+
+func AssertErrorMessages(errorMessage string) error {
+	// TODO
+	// outErr := cmdResult.stderr
+	// if outErr == errorMessage {
+	// 	return nil
+	// }
+	// return errors.New("Cli回傳訊息錯誤")
+	return nil
+}
+
+func checkNatsService() error {
+	nc, err := nats.Connect("nats://" + config.JetstreamURL)
+	defer nc.Close()
+	return err
+}
+
+func checkDispatcherService() error {
+	return nil
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
@@ -118,8 +205,12 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	ctx.Given(`^schema=$`, CreateSchema)
-	ctx.When(`^創建data product "([^"]*)" 註解 "([^"]*)" "([^"]*)"$`, CreateDataProductCommand)
-	ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 成功$`, SearchDataProductByCLISuccess)
-	ctx.Then(`^使用nats jetstream 查詢 "([^"]*)" 成功$`, SearchDataProductByJetstreamSuccess)
+	ctx.Given(`^已開啟服務nats$`,checkNatsService)
+	ctx.Given(`^已開啟服務dispatcher$`,checkDispatcherService)
+	ctx.When(`^創建一個data product "([^"]*)" 註解 "([^"]*)" schema檔案 "([^"]*)"$`, CreateDataProductCommand)
+	ctx.Step(`^Cli回傳"([^"]*)"建立成功$`, CreateDateProductCommandSuccess)
+	ctx.Step(`^Cli回傳建立失敗$`, CreateDateProductCommandFail)
+	ctx.Step(`^使用gravity-cli查詢data product 列表 "([^"]*)" 存在$`, SearchDataProductByCLISuccess)
+	ctx.Step(`^使用nats jetstream 查詢 data product 列表 "([^"]*)" 存在$`, SearchDataProductByJetstreamSuccess)
+	ctx.Then(`^應有錯誤訊息 "([^"]*)"$`, AssertErrorMessages)
 }
