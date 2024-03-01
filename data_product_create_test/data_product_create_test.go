@@ -3,7 +3,6 @@ package data_product_create
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -42,6 +41,8 @@ func LoadConfig() error {
 
 	return nil
 }
+
+var config Config = Config{JetstreamURL: "0.0.0.0:32803"}
 
 func TestFeatures(t *testing.T) {
 	// LoadConfig()
