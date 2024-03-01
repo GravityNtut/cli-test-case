@@ -48,7 +48,7 @@ func TestFeatures(t *testing.T) {
 		Options: &godog.Options{
 			Format:        "pretty",
 			Paths:         []string{"./"},
-			StopOnFailure: true,
+			StopOnFailure: false,
 			TestingT:      t,
 		},
 	}
