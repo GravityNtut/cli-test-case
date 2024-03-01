@@ -1,53 +1,55 @@
 Feature: Data Product create
+
+Scenario:
+Given 已開啟服務nats
+Given 已開啟服務dispatcher
 #Scenario
 	Scenario: 使用者使用product create指令來建立data product
-	Given schema=
-"""
-{
-	"id": { "type": "uint" },
-	"name": { "type": "string" },
-	"price": { "type": "uint" },
-	"kcal": { "type": "uint" }
-}
-"""
-	#step 1
-	When 創建data product "drink" 註解 "drink data" "success"
+	When 創建一個data product "<ProductName>" 註解 "<Description>" schema檔案 "<Schema>"
+	Then Cli回傳"<ProductName>"建立成功
+	Then 使用gravity-cli查詢data product 列表 "<ProductName>" 存在
+	Then 使用nats jetstream 查詢 data product 列表 "<ProductName>" 存在
+	Examples:
+	| ProductName | Description  | Schema      |
+	| drink       | description  | schema.json |
+	# ProductName max 240 characters
+	| [a]x240     | description  | schema.json |
+	# desc 32768 characters
+	| drink       | [a]x32768    | schema.json |
+	| drink       |  			 | schema.json |
+	| drink       | [ignore] 	 | schema.json |
+	| drink       | description  | [ignore]    | 
 
-	#step 2
-	Then 使用gravity-cli 查詢 "drink" 成功
 
-	#step 3
-	Then 使用nats jetstream 查詢 "drink" 成功
 
-#Scenario
-	Scenario: 測試data product名稱使用特殊字元
-	When 創建data product "_-*($)?@" 註解 "drink data" "fail"
+
 
 #Scenario
-	Scenario: 輸入相同名稱的data product
-
-	#step 1
-	When 創建data product "drink" 註解 "drink data" "success"
-
-	#step 2
-	Then 使用gravity-cli 查詢 "drink" 成功
-
-	#step 3
-	Then 使用nats jetstream 查詢 "drink" 成功
-
-	#step 4
-	When 創建data product "drink" 註解 "repeat" "fail"
+	Scenario: data product創建名稱重複
+	When 創建一個data product "<ProductName>" 註解 "<Description>" schema檔案 "<Schema>"
+	Then Cli回傳"<ProductName>"建立成功
+	Then 使用gravity-cli查詢data product 列表 "<ProductName>" 存在
+	Then 使用nats jetstream 查詢 data product 列表 "<ProductName>" 存在
+	When 創建一個data product "<ProductName2>" 註解 "<Description>" schema檔案 "<Schema>"
+	Then Cli回傳建立失敗
+	And 應有錯誤訊息 "<error_message>"
+	Examples:
+	| ProductName | Description  | Schema      | ProductName2 | error_message |
+	| drink       | description  | schema.json | drink        |			      |
 
 #Scenario
-	Scenario: 測試data product名稱使用中文
-	When 創建data product "飲料" 註解 "飲料相關資料表" "fail"
-
-#Scenario
-	Scenario: 測試data product輸入空值(input nothing)
-	When 創建data product "" 註解 "drink data" "fail"
-
-#Scenario
-	Scenario: 測試desc輸入空值(input nothing)
-	When 創建data product "drink" 註解 "" "success"
-	Then 使用gravity-cli 查詢 "drink" 成功
-	Then 使用nats jetstream 查詢 "drink" 成功
+	Scenario: data product 創建失敗情境
+	When 創建一個data product "<ProductName>" 註解 "<Description>" schema檔案 "<Schema>"
+	Then Cli回傳建立失敗
+	And 應有錯誤訊息 "<error_message>"
+	Examples:
+	| ProductName   | Description  | Schema        | error_message   |
+	| _-*($)?@      | description  | schema.json   | 			     |
+	| 中文		 	| description   | schema.json  |                 |
+	| [null]        | description  | schema.json   |				 |
+	|               | description  | schema.json   |				 |
+	| drink         | description  | notExist.json |				 |
+	| drink         | description  | abc.json      |				 |
+	# | drink         | [null]       | schema.json   |				 |
+	# | drink         | [null]       | notExist.json |				 |
+	# | drink         | [null]       | abc.json	   |				 |
