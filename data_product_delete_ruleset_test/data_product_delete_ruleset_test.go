@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -13,6 +14,8 @@ import (
 	"testing"
 
 	"github.com/cucumber/godog"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/nats-io/nats.go"
 )
 
@@ -151,8 +154,8 @@ func SearchRulesetByCLINotExists(dataProduct string, ruleset string) error {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	err := cmd.Run() 
-	if err != nil { 
+	err := cmd.Run()
+	if err != nil {
 		return nil
 	}
 	return fmt.Errorf("ruleset 應該不存在")
@@ -177,7 +180,23 @@ func CheckNatsService() error {
 }
 
 func CheckDispatcherService() error {
-	return nil
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return err
+	}
+
+	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, container := range containers {
+		fmt.Println(container.Names[0])
+		if container.Names[0] == "/gravity-dispatcher" {
+			return nil
+		}
+	}
+	return errors.New("dispatcher container 不存在")
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
