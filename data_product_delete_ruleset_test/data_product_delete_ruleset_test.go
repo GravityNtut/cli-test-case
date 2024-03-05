@@ -17,7 +17,7 @@ import (
 )
 
 type Config struct {
-	JetstreamURL string
+	JetstreamURL string `json:"jetstream_url"`
 }
 
 type CommandResult struct {
@@ -26,7 +26,7 @@ type CommandResult struct {
 	Stderr string
 }
 
-var config Config = Config{JetstreamURL: "0.0.0.0:32803"}
+var config Config
 var cmdResult CommandResult
 
 func LoadConfig() error {
@@ -34,7 +34,6 @@ func LoadConfig() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(str))
 	err = json.Unmarshal([]byte(str), &config)
 	if err != nil {
 		return err
@@ -43,6 +42,7 @@ func LoadConfig() error {
 	return nil
 }
 func TestFeatures(t *testing.T) {
+	LoadConfig()
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
 		Options: &godog.Options{
@@ -106,7 +106,6 @@ func AddRulesetCommand(dataProduct string, ruleset string) error {
 	dataProduct = ProcessString(dataProduct)
 	ruleset = ProcessString(ruleset)
 	commandString := "../gravity-cli product ruleset add " + dataProduct + " " + ruleset + " --event drinkCreated --method create --pk id --desc \"desc\" --handler ./assets/handler.js --schema ./assets/schema.json -s " + config.JetstreamURL
-	fmt.Println(commandString)
 	ExecuteShell(commandString)
 	return nil
 }
@@ -115,7 +114,6 @@ func DeleteRulesetCommand(productName string, rulesetName string) error {
 	productName = ProcessString(productName)
 	rulesetName = ProcessString(rulesetName)
 	commandString := "../gravity-cli product ruleset delete " + productName + " " + rulesetName + " -s " + config.JetstreamURL
-	fmt.Println(commandString)
 	ExecuteShell(commandString)
 	return nil
 }
@@ -154,10 +152,10 @@ func SearchRulesetByCLINotExists(dataProduct string, ruleset string) error {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run() 
-	if err != nil { //TODO 這裡要改成判斷是否有錯誤訊息
+	if err != nil { 
 		return nil
 	}
-	return err
+	return fmt.Errorf("ruleset 應該不存在")
 }
 
 func AssertErrorMessages(expected string) error {
