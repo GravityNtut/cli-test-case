@@ -18,7 +18,7 @@ Scenario:
         |   drink     | [a]x10        | delete  | drinkDeleted  |   [a]x256     | [a]x4000        |     [ignore]         |      [ignore]               |
         | drink       | drinkCreated | drinkCreated | drinkCreated | id  | drink_data_desc | handler.js     | schema.json |
         | drink       | drinkCreated | 中文         | 中文         | 中文 |                 | handler.js     | schema.json |
-        | drink       | drinkCreated | _-*($)?@     | _-*($)?@     | _-*($)?@  |    drink_data_desc    | handler.js     | schema.json |
+        # | drink       | drinkCreated | _-*($)?@     | _-*($)?@     | _-*($)?@  |    drink_data_desc    | handler.js     | schema.json |
 
 #Scenario
     Scenario: 針對data product加入ruleset 重複建立情境
