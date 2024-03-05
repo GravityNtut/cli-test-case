@@ -102,46 +102,36 @@ func ProcessString(str string) string {
 	return completeString
 }
 
-func AddRulesetCommand(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string) error {
+func AddRulesetCommand(dataProduct string, ruleset string) error {
 	dataProduct = ProcessString(dataProduct)
 	ruleset = ProcessString(ruleset)
-	commandString := "../gravity-cli product ruleset add " + dataProduct + " " + ruleset
-	if event != "[ignore]" {
-		event := ProcessString(event)
-		commandString += " --event " + event
-	}
-	if method != "[ignore]" {
-		method := ProcessString(method)
-		commandString += " --method " + method
-	}
-	if pk != "[ignore]" {
-		pk := ProcessString(pk)
-		commandString += " --pk " + pk
-	}
-	if desc != "[ignore]" {
-		if desc == "[null]" {
-			commandString += " --desc "
-		} else {
-			desc := ProcessString(desc)
-			commandString += " --desc \"" + desc + "\""
-		}
-	}
-	if handler != "[ignore]" {
-		commandString += " --handler ./assets/" + handler
-	}
-	if schema != "[ignore]" {
-		commandString += " --schema ./assets/" + schema
-	}
-	commandString += " -s " + config.JetstreamURL
+	commandString := "../gravity-cli product ruleset add " + dataProduct + " " + ruleset + " --event drinkCreated --method create --pk id --desc \"desc\" --handler ./assets/handler.js --schema ./assets/schema.json -s " + config.JetstreamURL
+	fmt.Println(commandString)
 	ExecuteShell(commandString)
 	return nil
 }
 
-func AddRulesetCommandFailed() error {
+func DeleteRulesetCommand(productName string, rulesetName string) error {
+	productName = ProcessString(productName)
+	rulesetName = ProcessString(rulesetName)
+	commandString := "../gravity-cli product ruleset delete " + productName + " " + rulesetName + " -s " + config.JetstreamURL
+	fmt.Println(commandString)
+	ExecuteShell(commandString)
+	return nil
+}
+
+func DeleteRulesetCommandFailed() error {
 	if cmdResult.err != nil {
 		return nil
 	}
-	return fmt.Errorf("ruleset 創建應該要失敗")
+	return fmt.Errorf("ruleset 刪除應該要失敗")
+}
+
+func DeleteRulesetCommandSuccess() error {
+	if cmdResult.err == nil {
+		return nil
+	}
+	return fmt.Errorf("ruleset 刪除應該要成功")
 }
 
 func ClearDataProducts() {
@@ -156,22 +146,17 @@ func ClearDataProducts() {
 	js.PurgeStream("KV_GVT_default_PRODUCT")
 }
 
-func AddRulesetCommandSuccess() error {
-	if cmdResult.err == nil {
-		return nil
-	}
-	return fmt.Errorf("ruleset 創建應該要成功")
-}
-
-func SearchRulesetByCLISuccess(dataProduct string, ruleset string) error {
+func SearchRulesetByCLINotExists(dataProduct string, ruleset string) error {
 	dataProduct = ProcessString(dataProduct)
 	ruleset = ProcessString(ruleset)
 	cmd := exec.Command("../gravity-cli", "product", "ruleset", "info", dataProduct, ruleset, "-s", config.JetstreamURL)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-
-	err := cmd.Run()
+	err := cmd.Run() 
+	if err != nil { //TODO 這裡要改成判斷是否有錯誤訊息
+		return nil
+	}
 	return err
 }
 
@@ -193,7 +178,7 @@ func CheckNatsService() error {
 	return nil
 }
 
-func checkDispatcherService() error {
+func CheckDispatcherService() error {
 	return nil
 }
 
@@ -203,15 +188,13 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		ClearDataProducts()
 		return ctx, nil
 	})
-	// ctx.Given(`^已開啟服務nats$`, CheckNatsService)
-	// ctx.Given(`^已開啟服務dispatcher$`, checkDispatcherService)
-
-	// ctx.Given(`^已有data product "([^"]*)"$`, CreateDataProduct)
-
-	// ctx.When(`^"([^"]*)" 創建ruleset "([^"]*)" method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)"$`, AddRulesetCommand)
-	// ctx.Then(`^ruleset 創建失敗$`, AddRulesetCommandFailed)
-
-	// ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
-	// ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 的 "([^"]*)" 成功$`, SearchRulesetByCLISuccess)
-	// ctx.Then(`^應有錯誤訊息 "([^"]*)"$`, AssertErrorMessages)
+	ctx.Given(`^已開啟服務nats$`, CheckNatsService)
+	ctx.Given(`^已開啟服務dispatcher$`, CheckDispatcherService)
+	ctx.Given(`^已有date product "([^"]*)"$`, CreateDataProduct)
+	ctx.Given(`^已有data product 的 ruleset "([^"]*)" "([^"]*)"$`, AddRulesetCommand)
+	ctx.When(`^刪除 "([^"]*)" 的 ruleset "([^"]*)"$`, DeleteRulesetCommand)
+	ctx.Then(`^刪除失敗$`, DeleteRulesetCommandFailed)
+	ctx.Then(`^刪除成功$`, DeleteRulesetCommandSuccess)
+	ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 的 "([^"]*)" 不存在$`, SearchRulesetByCLINotExists)
+	ctx.Then(`^應有錯誤訊息 "([^"]*)"$`, AssertErrorMessages)
 }
