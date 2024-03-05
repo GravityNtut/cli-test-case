@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -13,11 +14,13 @@ import (
 	"testing"
 
 	"github.com/cucumber/godog"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/nats-io/nats.go"
 )
 
 type Config struct {
-	JetstreamURL string
+	JetstreamURL string `json:"jetstream_url"`
 }
 
 type CommandResult struct {
@@ -26,7 +29,7 @@ type CommandResult struct {
 	Stderr string
 }
 
-var config Config = Config{JetstreamURL: "0.0.0.0:32803"}
+var config Config
 var cmdResult CommandResult
 
 func LoadConfig() error {
@@ -39,10 +42,11 @@ func LoadConfig() error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
+
 func TestFeatures(t *testing.T) {
+	LoadConfig()
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
 		Options: &godog.Options{
@@ -186,7 +190,23 @@ func CheckNatsService() error {
 }
 
 func checkDispatcherService() error {
-	return nil
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return err
+	}
+
+	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, container := range containers {
+		fmt.Println(container.Names[0])
+		if container.Names[0] == "/gravity-dispatcher" {
+			return nil
+		}
+	}
+	return errors.New("dispatcher container 不存在")
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
