@@ -9,12 +9,10 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"regexp"
-	"strconv"
 	"testing"
 
 	"github.com/cucumber/godog"
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/nats-io/nats.go"
 )
@@ -68,7 +66,6 @@ func CreateDataProduct(dataProduct string) error {
 func CreateDataProductRuleset(dataProduct string, ruleset string) error {
 	cmd := exec.Command("../gravity-cli", "product", "ruleset", "add", dataProduct, ruleset, "--event \"test\" --method create", "-s", config.JetstreamURL)
 	return cmd.Run()
-
 }
 
 func ExecuteShell(command string) error {
@@ -89,33 +86,13 @@ func ExecuteShell(command string) error {
 	return err
 }
 
-func ProcessString(str string) string {
-	re := regexp.MustCompile(`\[(\S+)\]x(\d+)`)
-
-	parts := re.FindStringSubmatch(str)
-	if parts == nil {
-		return str
-	}
-	chr := parts[1]
-	times, _ := strconv.Atoi(parts[2])
-	completeString := ""
-	for i := 0; i < times; i++ {
-		completeString += chr
-	}
-	return completeString
-}
-
 func AddRulesetCommand(dataProduct string, ruleset string) error {
-	dataProduct = ProcessString(dataProduct)
-	ruleset = ProcessString(ruleset)
 	commandString := "../gravity-cli product ruleset add " + dataProduct + " " + ruleset + " --event drinkCreated --method create --pk id --desc \"desc\" --handler ./assets/handler.js --schema ./assets/schema.json -s " + config.JetstreamURL
 	ExecuteShell(commandString)
 	return nil
 }
 
 func DeleteRulesetCommand(productName string, rulesetName string) error {
-	productName = ProcessString(productName)
-	rulesetName = ProcessString(rulesetName)
 	commandString := "../gravity-cli product ruleset delete " + productName + " " + rulesetName + " -s " + config.JetstreamURL
 	ExecuteShell(commandString)
 	return nil
@@ -143,13 +120,10 @@ func ClearDataProducts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	js.PurgeStream("KV_GVT_default_PRODUCT")
 }
 
 func SearchRulesetByCLINotExists(dataProduct string, ruleset string) error {
-	dataProduct = ProcessString(dataProduct)
-	ruleset = ProcessString(ruleset)
 	cmd := exec.Command("../gravity-cli", "product", "ruleset", "info", dataProduct, ruleset, "-s", config.JetstreamURL)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -159,15 +133,6 @@ func SearchRulesetByCLINotExists(dataProduct string, ruleset string) error {
 		return nil
 	}
 	return fmt.Errorf("ruleset 應該不存在")
-}
-
-func AssertErrorMessages(expected string) error {
-	// Todo
-	// if cmdResult.Stderr == expected {
-	// 	return nil
-	// }
-	// return fmt.Errorf("應有錯誤訊息: %s", expected)
-	return nil
 }
 
 func CheckNatsService() error {
@@ -185,13 +150,12 @@ func CheckDispatcherService() error {
 		return err
 	}
 
-	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
+	containers, err := cli.ContainerList(context.Background(), container.ListOptions{})
 	if err != nil {
 		return err
 	}
 
 	for _, container := range containers {
-		fmt.Println(container.Names[0])
 		if container.Names[0] == "/gravity-dispatcher" {
 			return nil
 		}
@@ -213,5 +177,4 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Then(`^刪除失敗$`, DeleteRulesetCommandFailed)
 	ctx.Then(`^刪除成功$`, DeleteRulesetCommandSuccess)
 	ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 的 "([^"]*)" 不存在$`, SearchRulesetByCLINotExists)
-	ctx.Then(`^應有錯誤訊息 "([^"]*)"$`, AssertErrorMessages)
 }
