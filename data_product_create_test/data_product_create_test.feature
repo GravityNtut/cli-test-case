@@ -4,7 +4,7 @@ Scenario:
 Given 已開啟服務nats
 Given 已開啟服務dispatcher
 #Scenario
-	Scenario: 使用者使用product create指令來建立data product
+	Scenario: 使用者使用product create指令來建立data product，成功情境
 	When 創建一個data product "<ProductName>" 註解 "<Description>" schema檔案 "<Schema>"
 	Then Cli回傳"<ProductName>"建立成功
 	Then 使用gravity-cli查詢data product 列表 "<ProductName>" 存在
@@ -20,12 +20,8 @@ Given 已開啟服務dispatcher
 	| drink       | [ignore] 	 | schema.json |
 	| drink       | description  | [ignore]    | 
 
-
-
-
-
 #Scenario
-	Scenario: data product創建名稱重複
+	Scenario: 使用者使用product create指令來建立data product，名稱重複
 	When 創建一個data product "<ProductName>" 註解 "<Description>" schema檔案 "<Schema>"
 	Then Cli回傳"<ProductName>"建立成功
 	Then 使用gravity-cli查詢data product 列表 "<ProductName>" 存在
@@ -38,7 +34,7 @@ Given 已開啟服務dispatcher
 	| drink       | description  | schema.json | drink        |			      |
 
 #Scenario
-	Scenario: data product 創建失敗情境
+	Scenario: 使用者使用product create指令來建立data product，失敗情境
 	When 創建一個data product "<ProductName>" 註解 "<Description>" schema檔案 "<Schema>"
 	Then Cli回傳建立失敗
 	And 應有錯誤訊息 "<error_message>"
