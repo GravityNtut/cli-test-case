@@ -40,7 +40,7 @@ Given 已開啟服務dispatcher
 	And 應有錯誤訊息 "<error_message>"
 	Examples:
 	| ProductName   | Description  | Schema        | error_message   |
-	| _-*($)?@      | description  | schema.json   | 			     |
+	| _-*\($\)?@      | description  | schema.json   | 			     |
 	| 中文		 	| description   | schema.json  |                 |
 	| [null]        | description  | schema.json   |				 |
 	|               | description  | schema.json   |				 |
