@@ -9,14 +9,16 @@ Scenario:
     Given 已有data product "<productName>"
     When "<productName>" 創建ruleset "<ruleset>" method "<method>" event "<event>" pk "<pk>" desc "<desc>" handler "<handler_script>" schema "<schema>"
     Then ruleset 創建成功
-    Then 使用gravity-cli 查詢 "<productName>" 的 "<ruleset>" 成功
+    Then 使用gravity-cli 查詢 "<productName>" 的 "<ruleset>" 存在
+    Then 使用nats jetstream 查詢 "<productName>" 的 "<ruleset>" 存在，且參數 method "<method>" event "<event>" pk "<pk>" desc "<desc>" handler "<handler_script>" schema "<schema>" 正確
     Examples:
         | productName | ruleset       | method  | event         |   pk          |  desc           | handler_script       |      schema                 |
         | drink       | drinkCreated  | create  | drinkCreated  |   id          | description     |     handler.js       |      schema.json            |
         | drink       | drinkUpdated  | update  | drinkUpdated  |   [ignore]    | [ignore]        |     [ignore]         |      [ignore]               |
-        | drink       | drinkDeleted  | delete  | drinkDeleted  |   [a]x256     | [a]x4000        |     [ignore]         |      [ignore]               |
-        |   drink     | [a]x10        | delete  | drinkDeleted  |   [a]x256     | [a]x4000        |     [ignore]         |      [ignore]               |
+        | drink       | drinkDeleted  | delete  | drinkDeleted  |   [a]x32768   | [a]x32768       |     [ignore]         |      [ignore]               |
+        |   drink     | [a]x32768     | delete  | drinkDeleted  |   [a]x32768   | [a]x32768       |     [ignore]         |      [ignore]               |
         | drink       | drinkCreated | drinkCreated | drinkCreated | id  | drink_data_desc | handler.js     | schema.json |
+        | drink       | drinkCreated | drinkCreated | drinkCreated | id,num  | drink_data_desc | handler.js     | schema.json |
         | drink       | drinkCreated | 中文         | 中文         | 中文 |                 | handler.js     | schema.json |
         #shell小括號是保留字，因此前面加反斜線還原初始輸入
         | drink       | drinkCreated | _-*\($\)?@     | _-*\($\)?@     | _-*\($\)?@  |    drink_data_desc    | handler.js     | schema.json |
@@ -26,7 +28,8 @@ Scenario:
     Given 已有data product "<productName>"
     When "<productName>" 創建ruleset "<ruleset>" method "<method>" event "<event>" pk "<pk>" desc "<desc>" handler "<handler_script>" schema "<schema>"
     Then ruleset 創建成功
-    Then 使用gravity-cli 查詢 "<productName>" 的 "<ruleset>" 成功
+    Then 使用gravity-cli 查詢 "<productName>" 的 "<ruleset>" 存在
+    Then 使用nats jetstream 查詢 "<productName>" 的 "<ruleset>" 存在，且參數 method "<method>" event "<event>" pk "<pk>" desc "<desc>" handler "<handler_script>" schema "<schema>" 正確
     When "<productName>" 創建ruleset "<ruleset>" method "<method>" event "<event>" pk "<pk>" desc "<desc>" handler "<handler_script>" schema "<schema>"
     Then ruleset 創建失敗
     Examples:

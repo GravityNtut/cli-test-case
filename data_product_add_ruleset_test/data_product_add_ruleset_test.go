@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/cucumber/godog"
@@ -29,6 +30,37 @@ type CommandResult struct {
 	Stderr string
 }
 
+type Rule struct {
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	Desc       string      `json:"desc"`
+	Event      string      `json:"event"`
+	Product    string      `json:"product"`
+	Method     string      `json:"method"`
+	PrimaryKey []string    `json:"primaryKey"`
+	Enabled    bool        `json:"enabled"`
+	Handler    interface{} `json:"handler"`
+	Schema     interface{} `json:"schema"`
+	CreatedAt  string      `json:"createdAt"`
+	UpdatedAt  string      `json:"updatedAt"`
+}
+
+type RuleMap map[string]Rule
+
+type JsonData struct {
+	Name            string      `json:"name"`
+	Desc            string      `json:"desc"`
+	Enabled         bool        `json:"enabled"`
+	Rules           RuleMap     `json:"rules"`
+	Schema          interface{} `json:"schema"`
+	EnabledSnapshot bool        `json:"enabledSnapshot"`
+	Snapshot        interface{} `json:"snapshot"`
+	Stream          string      `json:"stream"`
+	CreatedAt       string      `json:"createdAt"`
+	UpdatedAt       string      `json:"updatedAt"`
+}
+
+var jsonData JsonData
 var config Config
 var cmdResult CommandResult
 
@@ -37,7 +69,6 @@ func LoadConfig() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(str))
 	err = json.Unmarshal([]byte(str), &config)
 	if err != nil {
 		return err
@@ -174,6 +205,65 @@ func SearchRulesetByCLISuccess(dataProduct string, ruleset string) error {
 	return err
 }
 
+func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string) error {
+	nc, _ := nats.Connect("nats://" + config.JetstreamURL)
+	defer nc.Close()
+
+	js, err := nc.JetStream()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	kv, _ := js.KeyValue("GVT_default_PRODUCT")
+	entry, _ := kv.Get(dataProduct)
+	err = json.Unmarshal((entry.Value()), &jsonData)
+	if err != nil {
+		fmt.Println("解碼 JSON 時出現錯誤:", err)
+		return err
+	}
+	if ruleset != jsonData.Rules[ruleset].Name {
+		return err
+	}
+	if method != jsonData.Rules[ruleset].Method {
+		return err
+	}
+	if event != jsonData.Rules[ruleset].Event {
+		return err
+	}
+	if desc != jsonData.Rules[ruleset].Desc {
+		return err
+	}
+	expectedPK := strings.Join(jsonData.Rules[ruleset].PrimaryKey, ",")
+	if pk != expectedPK {
+		return err
+	}
+	fileContent, err := os.ReadFile("./assets/" + handler)
+	if err != nil {
+		return err
+	}
+	rulesetHandler, ok := jsonData.Rules[ruleset].Handler.(map[string]interface{})
+	if !ok {
+		return err
+	}
+	handlerScript, ok := rulesetHandler["script"].(string)
+	if !ok {
+		return err
+	}
+	if string(fileContent) != handlerScript {
+		return err
+	}
+	fileContent, err = os.ReadFile("./assets/" + schema)
+	if err != nil {
+		return err
+	}
+	schemaString, _ := json.Marshal(jsonData.Rules[ruleset].Schema)
+	fileContent = []byte(strings.TrimSpace(string(fileContent)))
+	if string(fileContent) != string(schemaString) {
+		return err
+	}
+	return nil
+}
+
 func AssertErrorMessages(expected string) error {
 	// Todo
 	// if cmdResult.Stderr == expected {
@@ -220,13 +310,11 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	})
 	ctx.Given(`^已開啟服務nats$`, CheckNatsService)
 	ctx.Given(`^已開啟服務dispatcher$`, checkDispatcherService)
-
 	ctx.Given(`^已有data product "([^"]*)"$`, CreateDataProduct)
-
 	ctx.When(`^"([^"]*)" 創建ruleset "([^"]*)" method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)"$`, AddRulesetCommand)
 	ctx.Then(`^ruleset 創建失敗$`, AddRulesetCommandFailed)
-
 	ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
-	ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 的 "([^"]*)" 成功$`, SearchRulesetByCLISuccess)
+	ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 的 "([^"]*)" 存在$`, SearchRulesetByCLISuccess)
+	ctx.Then(`使用nats jetstream 查詢 "([^"]*)" 的 "([^"]*)" 存在，且參數 method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)" 正確$`, SearchRulesetByNatsSuccess)
 	ctx.Then(`^應有錯誤訊息 "([^"]*)"$`, AssertErrorMessages)
 }
