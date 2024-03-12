@@ -221,16 +221,7 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 		fmt.Println("解碼 JSON 時出現錯誤:", err)
 		return err
 	}
-	if ruleset != jsonData.Rules[ruleset].Name {
-		return err
-	}
-	if method != jsonData.Rules[ruleset].Method {
-		return err
-	}
-	if event != jsonData.Rules[ruleset].Event {
-		return err
-	}
-	if desc != jsonData.Rules[ruleset].Desc {
+	if ruleset != jsonData.Rules[ruleset].Name && method != jsonData.Rules[ruleset].Method && event != jsonData.Rules[ruleset].Event && desc != jsonData.Rules[ruleset].Desc {
 		return err
 	}
 	expectedPK := strings.Join(jsonData.Rules[ruleset].PrimaryKey, ",")
