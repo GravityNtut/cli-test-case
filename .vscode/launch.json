@@ -5,7 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch test function",
+            "name": "data_product_delete_ruleset_test",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "data_product_delete_ruleset_test",
+            "args": [
+                "-test.run",
+                "TestFeatures"
+            ]
+        },
+        
+        {
+            "name": "data_product_add_ruleset_test",
             "type": "go",
             "request": "launch",
             "mode": "test",
@@ -16,7 +28,7 @@
             ]
         },
         {
-            "name": "Launch test function",
+            "name": "data_product_create_test",
             "type": "go",
             "request": "launch",
             "mode": "test",
