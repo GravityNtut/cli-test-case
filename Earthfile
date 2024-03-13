@@ -40,6 +40,7 @@ integration-test:
     # 下載輸出測試結果所需相依檔案，並輸出測試Coverage報告
     RUN go get github.com/BrobridgeOrg/gravity-cli/cmd
     RUN go tool covdata textfmt -i=$GOCOVERDIR -o coverage_result.txt
+    RUN go tool cover -func=coverage_result.txt
     RUN go tool cover -html=coverage_result.txt -o coverage_result.html
     SAVE ARTIFACT coverage_result.html AS LOCAL ./
 ci:
