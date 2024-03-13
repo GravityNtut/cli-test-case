@@ -15,3 +15,7 @@ earthly:
   stage: build
   script:
     - earthly --ci --push -P +ci
+job:
+  tags:
+    - On Host
+    - On PhotonOS
