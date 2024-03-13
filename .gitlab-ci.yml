@@ -11,7 +11,7 @@ image: earthly/earthly:v0.8.5
 before_script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD 
 
-earthly:
+build:
   stage: build
   script:
     - earthly --ci --push -P +ci
