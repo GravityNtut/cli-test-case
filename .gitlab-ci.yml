@@ -17,5 +17,3 @@ earthly:
     - earthly --ci --push -P +ci
   tags:
     - On Host
-    - On PhotonOS
-    - Run in Docker
