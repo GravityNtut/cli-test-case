@@ -16,4 +16,4 @@ earthly:
   script:
     - earthly --ci --push -P +ci
   tags:
-    - On Host
+    - Docker in Docker
