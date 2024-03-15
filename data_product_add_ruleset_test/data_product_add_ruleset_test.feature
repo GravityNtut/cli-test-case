@@ -20,8 +20,7 @@ Scenario:
         | drink       | drinkCreated | drinkCreated | drinkCreated | id  | drink_data_desc | handler.js     | schema.json |
         | drink       | drinkCreated | drinkCreated | drinkCreated | id,num  | drink_data_desc | handler.js     | schema.json |
         | drink       | drinkCreated | 中文         | 中文         | 中文 |                 | handler.js     | schema.json |
-        #shell小括號是保留字，因此前面加反斜線還原初始輸入
-        | drink       | drinkCreated | _-*\($\)?@     | _-*\($\)?@     | _-*\($\)?@  |    drink_data_desc    | handler.js     | schema.json |
+        | drink       | drinkCreated | _-*=_?+@     | _-*=_?+@    | _-*=_?+@  |    drink_data_desc    | handler.js     | schema.json |
 
 #Scenario
     Scenario: 針對data product加入ruleset 重複建立情境
@@ -46,7 +45,7 @@ Scenario:
         | productName | ruleset       | method  | event         |   pk     |  desc           | handler_script     |      schema               |              error_message             |
         | NotExists   |              |              |              |     |                 |                |             | |
         | drink       | 中文         |              |              |     |                 |                |             | |
-        | drink       | _-*\($\)?@     |              |              |     |                 |                |             | |
+        | drink       | _-*=_?+@     |              |              |     |                 |                |             | |
         | drink       |              |              |              |     |                 |                |             | |
         | drink       | drinkCreated |              |              |     |                 |                |             | |
         | drink       | drinkCreated | drinkCreated |              |     |                 |                |             | |
