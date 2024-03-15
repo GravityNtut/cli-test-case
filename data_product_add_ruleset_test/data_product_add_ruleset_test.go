@@ -248,7 +248,8 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 		return err
 	}
 	natsSchema, _ := json.Marshal(jsonData.Rules[ruleset].Schema)
-	fileSchema := strings.TrimSpace(string(fileContent))
+	fileSchema := strings.Join(strings.Fields(string(fileContent)), "")
+	fmt.Println(fileSchema)
 	if fileSchema != string(natsSchema) {
 		return err
 	}
