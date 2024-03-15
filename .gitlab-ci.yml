@@ -14,6 +14,7 @@ before_script:
 earthly:
   stage: build
   script:
+    - lein cloverage | perl -pe 's/\e\[?.*?[\@-~]//g'
     - earthly --ci --push -P +ci
   tags:
     - Docker in Docker
