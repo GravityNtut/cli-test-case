@@ -1,56 +1,27 @@
 package data_product_delete
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
-	"os"
 	"os/exec"
+	"test-case/testutils"
 	"testing"
 
 	"github.com/cucumber/godog"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
 	"github.com/nats-io/nats.go"
 )
 
-type Config struct {
-	JetstreamURL string `json:"jetstream_url"`
-}
-
-type CmdResult struct {
-	err    error
-	stdout string
-	stderr string
-}
-
-var config Config
-var cmdResult CmdResult
-
-func LoadConfig() error {
-	str, err := os.ReadFile("../config/config.json")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(str))
-	err = json.Unmarshal([]byte(str), &config)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+var ut = testutils.TestUtils{}
 
 func TestFeatures(t *testing.T) {
-	LoadConfig()
+	ut.LoadConfig()
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
 		Options: &godog.Options{
 			Format:        "pretty",
 			Paths:         []string{"./"},
-			StopOnFailure: true,
+			StopOnFailure: ut.Config.StopOnFailure,
 			TestingT:      t,
 		},
 	}
@@ -59,30 +30,8 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
-func ExecuteShell(command string) error {
-	f, err := os.Create("command.sh")
-	f.WriteString(command)
-	defer f.Close()
-
-	cmd := exec.Command("sh", "./command.sh")
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	cmdResult.err = cmd.Run()
-
-	cmdResult.stdout = stdout.String()
-	cmdResult.stderr = stderr.String()
-	return err
-}
-
 func SearchDataProductByCLIFail(dataProduct string) error {
-	cmd := exec.Command("../gravity-cli", "product", "info", dataProduct, "-s", config.JetstreamURL)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
+	cmd := exec.Command("../gravity-cli", "product", "info", dataProduct, "-s", ut.Config.JetstreamURL)
 	err := cmd.Run()
 	if err != nil {
 		return nil
@@ -91,7 +40,7 @@ func SearchDataProductByCLIFail(dataProduct string) error {
 }
 
 func SearchDataProductByJetstreamFail(dataProduct string) error {
-	nc, _ := nats.Connect("nats://" + config.JetstreamURL)
+	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -109,64 +58,18 @@ func SearchDataProductByJetstreamFail(dataProduct string) error {
 	return nil
 }
 
-func ClearDataProducts() {
-	nc, _ := nats.Connect("nats://" + config.JetstreamURL)
-	defer nc.Close()
-
-	js, err := nc.JetStream()
-	if err != nil {
-		log.Fatal(err)
-	}
-	js.PurgeStream("KV_GVT_default_PRODUCT")
-}
-
-func CreateDataProduct(dataProduct string) error {
-	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "-s", config.JetstreamURL)
-	cmd.Run()
-	return nil
-}
-
-func checkNatsService() error {
-	nc, err := nats.Connect("nats://" + config.JetstreamURL)
-	if err != nil {
-		return err
-	}
-	defer nc.Close()
-	return nil
-}
-
-func checkDispatcherService() error {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return err
-	}
-
-	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
-	if err != nil {
-		return err
-	}
-
-	for _, container := range containers {
-		fmt.Println(container.Names[0])
-		if container.Names[0] == "/gravity-dispatcher" {
-			return nil
-		}
-	}
-	return errors.New("dispatcher container 不存在")
-}
-
 func DeleteDataProductCommand(dataProduct string) error {
-	commandString := "../gravity-cli product delete " + dataProduct + " -s " + config.JetstreamURL
-	ExecuteShell(commandString)
+	commandString := "../gravity-cli product delete " + dataProduct + " -s " + ut.Config.JetstreamURL
+	ut.ExecuteShell(commandString)
 	return nil
 }
 
 func DeleteDataProductSuccess() error {
-	return cmdResult.err
+	return ut.CmdResult.Err
 }
 
 func DeleteDataProductFail() error {
-	if cmdResult.err != nil {
+	if ut.CmdResult.Err != nil {
 		return nil
 	}
 	return errors.New("data product 刪除應該要失敗")
@@ -175,14 +78,13 @@ func DeleteDataProductFail() error {
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
-		ClearDataProducts()
+		ut.ClearDataProducts()
 		return ctx, nil
 	})
 
-	ctx.Given(`^已開啟服務nats$`, checkNatsService)
-	ctx.Given(`^已開啟服務dispatcher$`, checkDispatcherService)
-
-	ctx.Given(`^已有data product "([^"]*)"$`, CreateDataProduct)
+	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
+	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
+	ctx.Given(`^已有data product "([^"]*)"$`, ut.CreateDataProduct)
 	ctx.When(`^刪除data product "([^"]*)"$`, DeleteDataProductCommand)
 	ctx.Then(`^data product 刪除成功$`, DeleteDataProductSuccess)
 	ctx.Then(`^data product 刪除失敗$`, DeleteDataProductFail)

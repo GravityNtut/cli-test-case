@@ -20,4 +20,7 @@
 # Go workspace file
 go.work
 command.sh
-
+gravity-cli
+coverage_data/*
+tmp/*
+coverage_result.html
