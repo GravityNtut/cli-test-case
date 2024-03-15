@@ -1,0 +1,4 @@
+tmp
+coverage_data/*
+command.sh
+gravity-cli
