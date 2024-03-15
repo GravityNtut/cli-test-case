@@ -85,6 +85,57 @@ func SearchRulesetByCLISuccess(dataProduct string, ruleset string) error {
 	return err
 }
 
+func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string) error {
+	nc, _ := nats.Connect("nats://" + config.JetstreamURL)
+	defer nc.Close()
+
+	js, err := nc.JetStream()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	kv, _ := js.KeyValue("GVT_default_PRODUCT")
+	entry, _ := kv.Get(dataProduct)
+	err = json.Unmarshal((entry.Value()), &jsonData)
+	if err != nil {
+		fmt.Println("解碼 JSON 時出現錯誤:", err)
+		return err
+	}
+	if ruleset != jsonData.Rules[ruleset].Name && method != jsonData.Rules[ruleset].Method && event != jsonData.Rules[ruleset].Event && desc != jsonData.Rules[ruleset].Desc {
+		return errors.New("NATS 查詢 ruleset 資訊不正確")
+	}
+	expectedPK := strings.Join(jsonData.Rules[ruleset].PrimaryKey, ",")
+	if pk != expectedPK {
+		return errors.New("NATS 查詢 ruleset PK資訊不正確")
+	}
+	fileContent, err := os.ReadFile("./assets/" + handler)
+	if err != nil {
+		return errors.New("NATS 查詢 handler.js 開啟失敗")
+	}
+	rulesetHandler, ok := jsonData.Rules[ruleset].Handler.(map[string]interface{})
+	if !ok {
+		return errors.New("NATS 查詢 handler 格式轉換失敗")
+	}
+	handlerScript, ok := rulesetHandler["script"].(string)
+	if !ok {
+		return errors.New("NATS 查詢 handler map 格式轉換失敗")
+	}
+	if string(fileContent) != handlerScript {
+		return errors.New("NATS 查詢 ruleset handler.js 資訊不正確")
+	}
+	fileContent, err = os.ReadFile("./assets/" + schema)
+	if err != nil {
+		return errors.New("NATS 查詢 schema.json 開啟失敗")
+	}
+	natsSchema, _ := json.Marshal(jsonData.Rules[ruleset].Schema)
+	fileSchema := strings.Join(strings.Fields(string(fileContent)), "")
+	fmt.Println(fileSchema)
+	if fileSchema != string(natsSchema) {
+		return errors.New("NATS 查詢 ruleset schema.json 資訊不正確")
+	}
+	return nil
+}
+
 func AssertErrorMessages(expected string) error {
 	// Todo
 	// if cmdResult.Stderr == expected {
@@ -107,8 +158,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.When(`^"([^"]*)" 創建ruleset "([^"]*)" method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)"$`, AddRulesetCommand)
 	ctx.Then(`^ruleset 創建失敗$`, AddRulesetCommandFailed)
-
 	ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
-	ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 的 "([^"]*)" 成功$`, SearchRulesetByCLISuccess)
+	ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 的 "([^"]*)" 存在$`, SearchRulesetByCLISuccess)
+	ctx.Then(`使用nats jetstream 查詢 "([^"]*)" 的 "([^"]*)" 存在，且參數 method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)" 正確$`, SearchRulesetByNatsSuccess)
 	ctx.Then(`^應有錯誤訊息 "([^"]*)"$`, AssertErrorMessages)
 }
