@@ -185,8 +185,11 @@ func AssertErrorMessages(expected string) error {
 
 func CheckNatsService() error {
 	nc, err := nats.Connect("nats://" + config.JetstreamURL)
+	if err != nil {
+		return err
+	}
 	defer nc.Close()
-	return err
+	return nil
 }
 
 func checkDispatcherService() error {
