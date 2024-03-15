@@ -104,6 +104,8 @@ func UpdateDataProductCommand(dataProduct string, description string, enable str
 			description := ProcessString(description)
 			commandString += " --desc \"" + description + "\""
 		}
+	} else {
+		commandString += ""
 	}
 
 	if enable != "[ignore]" {
@@ -289,20 +291,31 @@ func DataProductUpdateSuccess(dataProduct string, description string, schema str
 			return err
 		}
 		schemaString, _ := json.Marshal(newJsonData.Schema)
-		fileSchema := strings.TrimSpace(string(fileContent))
+		var jsonInterface interface{}
+		json.Unmarshal(fileContent, &jsonInterface)
+		fileSchemaByte, _ := json.Marshal(jsonInterface)
+		fileSchema := strings.Join(strings.Fields(string(fileSchemaByte)), "")
 		if fileSchema != string(schemaString) {
-			fmt.Println("File " + fileSchema)
-			fmt.Println("schema " + string(schemaString))
 			return errors.New("schema內容不同")
 		}
 	}
 
-	enabledBool := false
+	var enabledBool bool
 	if enabled == "[true]" {
 		enabledBool = true
+	} else if enabled == "[ignore]" {
+		enabledBool = newJsonData.Enabled
+	} else {
+		enabledBool = false
 	}
 
-	if dataProduct == newJsonData.Name && description == newJsonData.Desc && enabledBool == newJsonData.Enabled {
+	if description != "[ignore]" {
+		if description != newJsonData.Desc {
+			return errors.New("description內容不同")
+		}
+	}
+
+	if dataProduct == newJsonData.Name && enabledBool == newJsonData.Enabled {
 		return nil
 	}
 	return errors.New("資料更新失敗")
@@ -313,7 +326,6 @@ func UpdateSuccess() error {
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
-
 	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
 		ClearDataProducts()
 		return ctx, nil
