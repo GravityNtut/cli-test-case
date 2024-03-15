@@ -222,36 +222,36 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 		return err
 	}
 	if ruleset != jsonData.Rules[ruleset].Name && method != jsonData.Rules[ruleset].Method && event != jsonData.Rules[ruleset].Event && desc != jsonData.Rules[ruleset].Desc {
-		return err
+		return errors.New("NATS 查詢 ruleset 資訊不正確")
 	}
 	expectedPK := strings.Join(jsonData.Rules[ruleset].PrimaryKey, ",")
 	if pk != expectedPK {
-		return err
+		return errors.New("NATS 查詢 ruleset PK資訊不正確")
 	}
 	fileContent, err := os.ReadFile("./assets/" + handler)
 	if err != nil {
-		return err
+		return errors.New("NATS 查詢 handler.js 開啟失敗")
 	}
 	rulesetHandler, ok := jsonData.Rules[ruleset].Handler.(map[string]interface{})
 	if !ok {
-		return err
+		return errors.New("NATS 查詢 handler 格式轉換失敗")
 	}
 	handlerScript, ok := rulesetHandler["script"].(string)
 	if !ok {
-		return err
+		return errors.New("NATS 查詢 handler map 格式轉換失敗")
 	}
 	if string(fileContent) != handlerScript {
-		return err
+		return errors.New("NATS 查詢 ruleset handler.js 資訊不正確")
 	}
 	fileContent, err = os.ReadFile("./assets/" + schema)
 	if err != nil {
-		return err
+		return errors.New("NATS 查詢 schema.json 開啟失敗")
 	}
 	natsSchema, _ := json.Marshal(jsonData.Rules[ruleset].Schema)
 	fileSchema := strings.Join(strings.Fields(string(fileContent)), "")
 	fmt.Println(fileSchema)
 	if fileSchema != string(natsSchema) {
-		return err
+		return errors.New("NATS 查詢 ruleset schema.json 資訊不正確")
 	}
 	return nil
 }
