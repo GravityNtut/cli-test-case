@@ -43,27 +43,19 @@ func TestFeatures(t *testing.T) {
 }
 
 func UpdateDataProductCommand(dataProduct string, description string, enable string, schema string) error {
-	dataProduct = ut.ProcessString(dataProduct)
 	commandString := "../gravity-cli product update "
-	if dataProduct != "[null]" {
-		commandString += dataProduct
-	}
+	commandString += dataProduct
 	if description != "[ignore]" {
 		if description == "[null]" {
 			commandString += " --desc"
 		} else {
-			description := ut.ProcessString(description)
 			commandString += " --desc \"" + description + "\""
 		}
-	} else {
-		commandString += ""
 	}
 
 	if enable != "[ignore]" {
 		if enable == "[true]" {
 			commandString += " --enabled"
-		} else if enable == "" {
-			commandString += ""
 		} else {
 			return errors.New("不允許true或ignore以外的輸入")
 		}
@@ -78,26 +70,14 @@ func UpdateDataProductCommand(dataProduct string, description string, enable str
 	return nil
 }
 
-func CreateDateProductCommandSuccess(productName string) error {
-	outStr := ut.CmdResult.Stdout
-	productName = ut.ProcessString(productName)
-	if outStr == "Product \""+productName+"\" was created\n" {
+func UpdateDataProductCommandFail() error {
+	if ut.CmdResult.Err != nil {
 		return nil
 	}
-	return errors.New("Cli回傳訊息錯誤")
-}
-
-func CreateDateProductCommandFail() error {
-	outErr := ut.CmdResult.Stderr
-	outStr := ut.CmdResult.Stdout
-	if outStr == "" && outErr != "" {
-		return nil
-	}
-	return errors.New("Cli回傳訊息錯誤")
+	return errors.New("更新資料錯誤")
 }
 
 func SearchDataProductByJetstreamSuccess(dataProduct string) error {
-	dataProduct = ut.ProcessString(dataProduct)
 	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
 	defer nc.Close()
 
@@ -127,7 +107,6 @@ func AssertErrorMessages(errorMessage string) error {
 }
 
 func DataProductNotChanges(dataProduct string, description string, schema string, enabled string) error {
-
 	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
 	defer nc.Close()
 
@@ -181,9 +160,9 @@ func DataProductUpdateSuccess(dataProduct string, description string, schema str
 	if enabled == "[true]" {
 		enabledBool = true
 	} else if enabled == "[ignore]" {
-		enabledBool = newJsonData.Enabled
-	} else {
 		enabledBool = false
+	} else {
+		return errors.New("不允許true或ignore以外的輸入")
 	}
 
 	if description != "[ignore]" {
@@ -198,8 +177,11 @@ func DataProductUpdateSuccess(dataProduct string, description string, schema str
 	return errors.New("資料更新失敗")
 }
 
-func UpdateSuccess() error {
-	return ut.CmdResult.Err
+func UpdateDataProductCommandSuccess() error {
+	if ut.CmdResult.Err != nil {
+		return errors.New("更新資料錯誤")
+	}
+	return nil
 }
 
 func StoreNowDataProduct(dataProduct string) error {
@@ -228,8 +210,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^已有data product "([^"]*)"$`, ut.CreateDataProduct)
 	ctx.Given(`^儲存nats現有data product "([^"]*)" 副本$`, StoreNowDataProduct)
 	ctx.When(`^更新data product "([^"]*)" 註解 "([^"]*)" "([^"]*)" schema檔案 "([^"]*)"$`, UpdateDataProductCommand)
-	ctx.Then(`^data product更改成功$`, UpdateSuccess)
-	ctx.Then(`^Cli回傳建立失敗$`, CreateDateProductCommandFail)
+	ctx.Then(`^data product更改成功$`, UpdateDataProductCommandSuccess)
+	ctx.Then(`^data product更改失敗$`, UpdateDataProductCommandFail)
 	ctx.Then(`^應有錯誤訊息 "([^"]*)"$`, AssertErrorMessages)
 	ctx.Then(`^使用nats驗證data product "([^"]*)" description "([^"]*)" schema檔案 "([^"]*)" enabled "([^"]*)" 更改成功`, DataProductUpdateSuccess)
 	ctx.Then(`^使用nats驗證data product "([^"]*)" description "([^"]*)" schema檔案 "([^"]*)" enabled "([^"]*)" 資料無任何改動$`, DataProductNotChanges)

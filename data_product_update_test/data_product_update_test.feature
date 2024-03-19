@@ -23,11 +23,11 @@ Given 已開啟服務dispatcher
 	Given 已有data product "<ProductName>"
 	Given 儲存nats現有data product "<ProductName>" 副本
 	When 更新data product "<ProductName>" 註解 "<Description>" "<Enabled>" schema檔案 "<Schema>"
-	Then Cli回傳建立失敗
-	And 應有錯誤訊息 "<error_message>"
+	Then data product更改失敗
+	And 應有錯誤訊息 "<Error_message>"
 	And 使用nats驗證data product "<ProductName>" description "<Description>" schema檔案 "<Schema>" enabled "<Enabled>" 資料無任何改動
 	Examples:
-	| ProductName   | Description  | Schema           | Enabled   | error_message   |
+	| ProductName   | Description  | Schema           | Enabled   | Error_message   |
 	| NotExist      |              |                  | [ignore]  | 			    |
 	| drink		 	| [ignore]     | failSchema.json  | [ignore]  |                 |
 	| drink		 	| [ignore]     | failSchema.json  | [true]    |                 |
