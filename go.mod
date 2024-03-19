@@ -2,6 +2,8 @@ module test-case
 
 go 1.21
 
+toolchain go1.21.3
+
 require (
 	github.com/cucumber/godog v0.13.0
 	github.com/docker/docker v25.0.3+incompatible
