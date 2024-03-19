@@ -96,7 +96,7 @@ func AddRulesetCommand(dataProduct string, ruleset string, method string, event 
 	if schema != "[ignore]" {
 		commandString += " --schema ./assets/" + schema
 	}
-	commandString += " -s " + ut.Config.JetstreamURL
+	commandString += " --enabled -s " + ut.Config.JetstreamURL
 	ut.ExecuteShell(commandString)
 	return nil
 }
