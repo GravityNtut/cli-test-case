@@ -54,7 +54,7 @@ func CreateDataProductCommand(dataProduct string, description string, schema str
 	return nil
 }
 
-func CreateDateProductCommandSuccess(productName string) error {
+func CreateDataProductCommandSuccess(productName string) error {
 	outStr := ut.CmdResult.Stdout
 	productName = ut.ProcessString(productName)
 	if outStr == "Product \""+productName+"\" was created\n" {
@@ -63,10 +63,8 @@ func CreateDateProductCommandSuccess(productName string) error {
 	return errors.New("Cli回傳訊息錯誤")
 }
 
-func CreateDateProductCommandFail() error {
-	outErr := ut.CmdResult.Stderr
-	outStr := ut.CmdResult.Stdout
-	if outStr == "" && outErr != "" {
+func CreateDataProductCommandFail() error {
+	if ut.CmdResult.Err != nil {
 		return nil
 	}
 	return errors.New("Cli回傳訊息錯誤")
@@ -119,8 +117,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
 	ctx.When(`^創建一個data product "([^"]*)" 註解 "([^"]*)" schema檔案 "([^"]*)"$`, CreateDataProductCommand)
-	ctx.Step(`^Cli回傳"([^"]*)"建立成功$`, CreateDateProductCommandSuccess)
-	ctx.Step(`^Cli回傳建立失敗$`, CreateDateProductCommandFail)
+	ctx.Step(`^Cli回傳"([^"]*)"建立成功$`, CreateDataProductCommandSuccess)
+	ctx.Step(`^Cli回傳建立失敗$`, CreateDataProductCommandFail)
 	ctx.Step(`^使用gravity-cli查詢data product 列表 "([^"]*)" 存在$`, SearchDataProductByCLISuccess)
 	ctx.Step(`^使用nats jetstream 查詢 data product 列表 "([^"]*)" 存在$`, SearchDataProductByJetstreamSuccess)
 	ctx.Then(`^應有錯誤訊息 "([^"]*)"$`, AssertErrorMessages)

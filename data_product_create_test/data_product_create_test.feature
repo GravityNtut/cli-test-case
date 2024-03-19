@@ -28,18 +28,18 @@ Given 已開啟服務dispatcher
 	Then 使用nats jetstream 查詢 data product 列表 "<ProductName>" 存在
 	When 創建一個data product "<ProductName2>" 註解 "<Description>" schema檔案 "<Schema>"
 	Then Cli回傳建立失敗
-	And 應有錯誤訊息 "<error_message>"
+	And 應有錯誤訊息 "<Error_message>"
 	Examples:
-	| ProductName | Description  | Schema      | ProductName2 | error_message |
+	| ProductName | Description  | Schema      | ProductName2 | Error_message |
 	| drink       | description  | schema.json | drink        |			      |
 
 #Scenario
 	Scenario: 使用者使用product create指令來建立data product，失敗情境
 	When 創建一個data product "<ProductName>" 註解 "<Description>" schema檔案 "<Schema>"
 	Then Cli回傳建立失敗
-	And 應有錯誤訊息 "<error_message>"
+	And 應有錯誤訊息 "<Error_message>"
 	Examples:
-	| ProductName   | Description  | Schema        | error_message   |
+	| ProductName   | Description  | Schema        | Error_message   |
 	| _-*\($\)?@      | description  | schema.json   | 			     |
 	| 中文		 	| description   | schema.json  |                 |
 	| [null]        | description  | schema.json   |				 |

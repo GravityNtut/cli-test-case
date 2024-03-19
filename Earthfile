@@ -1,5 +1,5 @@
 VERSION 0.7
-FROM golang:1.20.4-alpine
+FROM golang:1.21.3-alpine
 build-cli:
     RUN apk update && apk upgrade --available \
         && apk add git
@@ -48,5 +48,4 @@ integration-test:
     RUN go tool cover -html=coverage_result.txt -o coverage_result.html
     SAVE ARTIFACT coverage_result.html AS LOCAL ./
 ci:
-    BUILD +build-cli
     BUILD +integration-test
