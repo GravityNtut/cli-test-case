@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "data_product_update_ruleset_test",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "data_product_update_ruleset_test",
+            "args": [
+                "-test.run",
+                "TestFeatures"
+            ]
+        },
+        
+        {
             "name": "data_product_delete_ruleset_test",
             "type": "go",
             "request": "launch",
