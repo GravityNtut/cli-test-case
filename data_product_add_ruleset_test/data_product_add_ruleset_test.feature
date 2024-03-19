@@ -21,6 +21,8 @@ Scenario:
         | drink       | drinkCreated  | drinkCreated | drinkCreated  |      id,num   | drink_data_desc   |     handler.js       |      schema.json      |
         | drink       | drinkCreated  | 中文         | 中文           |     中文      |                   |     handler.js       |      schema.json      |
         | drink       | drinkCreated  | _-*=_?+@     | _-*=_?+@      |   _-*=_?+@    | drink_data_desc   |     handler.js       |      schema.json      |
+        | drink       | 中文          |  create      |   drinkCreated|   [ignore]    |    [ignore]       |    [ignore]          |      [ignore]         |
+        | drink       | _-*=_?+@      |  create      |   drinkCreated|   [ignore]    |    [ignore]       |    [ignore]          |      [ignore]         |
 
 #Scenario
     Scenario: 針對data product加入ruleset 重複建立情境
@@ -43,15 +45,14 @@ Scenario:
     And 應有錯誤訊息 "<Error_message>"
     Examples:
         | ProductName | Ruleset       | Method       | Event         |   Pk     |  Desc            | Handler_script     |      Schema            |              Error_message             |
-        | NotExists   |  drinkCreated |              |               |          |                  |                    |                        |                                        |
-        |             |               |  [ignore]    |   [ignore]    |          |                  |                    |                        |                                        |
-        | drink       | 中文          |              |               |          |                  |                    |                        |                                        |
-        | drink       | _-*=_?+@      |              |               |          |                  |                    |                        |                                        |
-        | drink       |               |              |               |          |                  |                    |                        |                                        |
-        | drink       | drinkCreated  |              |               |          |                  |                    |                        |                                        |
-        | drink       | drinkCreated  | drinkCreated |               |          |                  |                    |                        |                                        |
-        | drink       | drinkCreated  | 中文         |               |          |                  |                    |                        |                                        |
-        | drink       | drinkCreated  |              |               |   id     |   description    |     handler.js     |      schema.json       |                                        |  
+        | NotExists   |  drinkCreated |  create      |  drinkCreated | [ignore] |   [ignore]       |  [ignore]          |       [ignore]         |                                        |
+        |             |               | [ignore]     |   [ignore]    | [ignore] |   [ignore]       |  [ignore]          |      [ignore]          |                                        |
+        | drink       |               | [ignore]     |   [ignore]    | [ignore] |   [ignore]       |  [ignore]          |      [ignore]          |                                        |
+        | drink       | drinkCreated  | [ignore]     |  [ignore]     |   id     |   description    |     handler.js     |     schema.json        |                                        |
+        | drink       | drinkCreated  | [ignore]     | drinkCreated  |   id     |   description    |     handler.js     |     schema.json        |                                        |
+        | drink       | drinkCreated  | drinkCreated |  [ignore]     |   id     |   description    |     handler.js     |     schema.json        |                                        |
+        | drink       | drinkCreated  | 中文         |  [ignore]     |   id     |   description    |     handler.js     |      schema.json       |                                        |
+        | drink       | drinkCreated  | [ignore]     |  [ignore]     |   id     |   description    |     handler.js     |      schema.json       |                                        |  
         | drink       | drinkCreated  | create       | drinkCreated  |   id     |   description    |     handler.js     |   not_exist.json       |                                        |  
         | drink       | drinkCreated  | create       | drinkCreated  |   id     |   description    |     handler.js     | fail_schema.json       |                                        |  
         | drink       | drinkCreated  | create       | drinkCreated  |   id     |   description    |     abc.js         | schema.json            |                                        |  
