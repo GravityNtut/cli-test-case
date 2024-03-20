@@ -47,5 +47,6 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.24.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
 )

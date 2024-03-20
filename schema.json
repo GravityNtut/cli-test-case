@@ -1,0 +1,7 @@
+{
+	"id": { "type": "uint" },
+	"name": { "type": "string" },
+	"price": { "type": "uint" },
+	"abc": { "type": "string" },
+	"kcal": { "type": "uint" }
+}
