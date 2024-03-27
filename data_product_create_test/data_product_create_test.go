@@ -37,20 +37,12 @@ func CreateDataProductCommand(dataProduct string, description string, schema str
 		commandString += dataProduct
 	}
 	if description != "[ignore]" {
-		if description == "[space]" {
-			commandString += " --desc \" \""
-		} else {
-			description := ut.ProcessString(description)
-			commandString += " --desc \"" + description + "\""
-		}
+		description := ut.ProcessString(description)
+		commandString += " --desc " + description
 	}
 
 	if schema != "[ignore]" {
-		if schema == "[null]" {
-			commandString += " --schema \"\""
-		} else {
-			commandString += " --schema ./assets/" + schema
-		}
+		commandString += " --schema " + schema
 	}
 	commandString += " --enabled" + " -s " + ut.Config.JetstreamURL
 	ut.ExecuteShell(commandString)
@@ -120,10 +112,10 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
-	ctx.When(`^創建 data product "([^"]*)" 使用參數 "([^"]*)" "([^"]*)"$`, CreateDataProductCommand)
-	ctx.Then(`^Cli 回傳 "([^"]*)" 建立成功$`, CreateDataProductCommandSuccess)
+	ctx.When(`^創建 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
+	ctx.Then(`^Cli 回傳 "'(.*?)'" 建立成功$`, CreateDataProductCommandSuccess)
 	ctx.Then(`^Cli 回傳建立失敗$`, CreateDataProductCommandFail)
-	ctx.Then(`^使用 gravity-cli 查詢 "([^"]*)" 存在$`, SearchDataProductByCLISuccess)
-	ctx.Then(`^使用 nats jetstream 查詢 "([^"]*)" 存在$`, SearchDataProductByJetstreamSuccess)
-	ctx.Then(`^應有錯誤訊息 "([^"]*)"$`, AssertErrorMessages)
+	ctx.Then(`^使用 gravity-cli 查詢 "'(.*?)'" 存在$`, SearchDataProductByCLISuccess)
+	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 存在$`, SearchDataProductByJetstreamSuccess)
+	ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
 }
