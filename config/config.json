@@ -1,4 +1,4 @@
 {
     "jetstream_url" : "127.0.0.1:32803",
-    "StopOnFailure" : true
+    "StopOnFailure" : false
 }

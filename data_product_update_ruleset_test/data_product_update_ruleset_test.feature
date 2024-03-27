@@ -15,7 +15,7 @@ Given 已開啟服務dispatcher
 	| drink       | drinkCreated  | create    | drinkCreated  | id       | description   | handler.js       | schema.json   | [true]   |
 	| drink       | drinkCreated  | [ignore]  | [ignore]      | [ignore] | [ignore]      | [ignore]         | [ignore]      | [ignore] |
     #單獨update method會跳Error: Invalid method
-    # | drink       | drinkCreated  | create    | [ignore]      | [ignore] | [ignore]      | [ignore]         | [ignore]      | [ignore] |
+    | drink       | drinkCreated  | create    | [ignore]      | [ignore] | [ignore]      | [ignore]         | [ignore]      | [ignore] |
     | drink       | drinkCreated  | [ignore]  | drinkCreated  | [ignore] | [ignore]      | [ignore]         | [ignore]      | [ignore] |
     | drink       | drinkCreated  | [ignore]  | [ignore]      | id       | [ignore]      | [ignore]         | [ignore]      | [ignore] |
     | drink       | drinkCreated  | [ignore]  | [ignore]      | id,num   | [ignore]      | [ignore]         | [ignore]      | [ignore] |
