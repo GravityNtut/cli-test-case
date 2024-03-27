@@ -69,7 +69,13 @@ func TestFeatures(t *testing.T) {
 func AddRulesetCommand(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string) error {
 	dataProduct = ut.ProcessString(dataProduct)
 	ruleset = ut.ProcessString(ruleset)
-	commandString := "../gravity-cli product ruleset add " + dataProduct + " " + ruleset
+	commandString := "../gravity-cli product ruleset add "
+	if dataProduct != "[null]" {
+		commandString += " " + dataProduct
+	}
+	if ruleset != "[null]" {
+		commandString += " " + ruleset
+	}
 	if event != "[ignore]" {
 		event := ut.ProcessString(event)
 		commandString += " --event " + event
@@ -83,12 +89,8 @@ func AddRulesetCommand(dataProduct string, ruleset string, method string, event 
 		commandString += " --pk " + pk
 	}
 	if desc != "[ignore]" {
-		if desc == "[null]" {
-			commandString += " --desc "
-		} else {
-			desc := ut.ProcessString(desc)
-			commandString += " --desc \"" + desc + "\""
-		}
+		desc := ut.ProcessString(desc)
+		commandString += " --desc " + desc
 	}
 	if handler != "[ignore]" {
 		commandString += " --handler ./assets/" + handler
@@ -210,12 +212,12 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
 
-	ctx.Given(`^已有data product "([^"]*)"$`, ut.CreateDataProduct)
+	ctx.Given(`^已有data product "'(.*?)'"$`, ut.CreateDataProduct)
 
-	ctx.When(`^"([^"]*)" 創建ruleset "([^"]*)" method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)"$`, AddRulesetCommand)
+	ctx.When(`^"'(.*?)'" 創建ruleset "'(.*?)'" method "'(.*?)'" event "'(.*?)'" pk "'(.*?)'" desc "'(.*?)'" handler "'(.*?)'" schema "'(.*?)'"$`, AddRulesetCommand)
 	ctx.Then(`^ruleset 創建失敗$`, AddRulesetCommandFailed)
 	ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
-	ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 的 "([^"]*)" 存在$`, SearchRulesetByCLISuccess)
-	ctx.Then(`使用nats jetstream 查詢 "([^"]*)" 的 "([^"]*)" 存在，且參數 method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)" 正確$`, SearchRulesetByNatsSuccess)
-	ctx.Then(`^應有錯誤訊息 "([^"]*)"$`, AssertErrorMessages)
+	ctx.Then(`^使用gravity-cli 查詢 "'(.*?)'" 的 "'(.*?)'" 存在$`, SearchRulesetByCLISuccess)
+	ctx.Then(`使用nats jetstream 查詢 "'(.*?)'" 的 "'(.*?)'" 存在，且參數 method "'(.*?)'" event "'(.*?)'" pk "'(.*?)'" desc "'(.*?)'" handler "'(.*?)'" schema "'(.*?)'" 正確$`, SearchRulesetByNatsSuccess)
+	ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
 }
