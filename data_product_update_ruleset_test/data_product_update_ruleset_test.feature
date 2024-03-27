@@ -12,7 +12,7 @@ Given 已開啟服務dispatcher
 	And 使用nats驗證 data product "'drink'" 的 ruleset "'drinkCreated'" 更改成功 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
 	Examples:
     | ProductName | Ruleset       | Method    | Event         | Pk       | Desc          | 		Handler_script	   | 		Schema          | Enabled  |
-	| drink       | drinkCreated  | create    | drinkCreated  | id       | "description" | "./assets/handler.js"   | "./assets/schema.json" | [true]   |
+	| drink       | drinkCreated  | "create"  | "drinkCreated"| "id"     | "description" | "./assets/handler.js"   | "./assets/schema.json" | [true]   |
 	| drink       | drinkCreated  | [ignore]  | [ignore]      | [ignore] | [ignore]      | 		  [ignore]         | 		[ignore]        | [ignore] |
     #單獨update method會跳Error: Invalid method
     # | drink       | drinkCreated  | create    | [ignore]      | [ignore] | [ignore]      | 		[ignore]         | 		[ignore]      	  | [ignore] |

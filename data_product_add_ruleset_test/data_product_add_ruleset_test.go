@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"test-case/testutils"
 	"testing"
@@ -141,8 +142,12 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 		fmt.Println("解碼 JSON 時出現錯誤:", err)
 		return err
 	}
-
 	ruleset = ut.ProcessString(ruleset)
+	//以下四個參數shell可以加上雙引號，因此這裡要進行移除
+	method = regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(method)[1]
+	event = regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(event)[1]
+	desc = regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(desc)[1]
+	pk = regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(pk)[1]
 	method = ut.ProcessString(method)
 	event = ut.ProcessString(event)
 	desc = ut.ProcessString(desc)
@@ -160,7 +165,8 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 	}
 
 	if handler != "[ignore]" {
-		fileContent, err := os.ReadFile(handler)
+		regexHandler := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(handler)[1]
+		fileContent, err := os.ReadFile(regexHandler)
 		if err != nil {
 			return errors.New("NATS 查詢 handler.js 開啟失敗")
 		}
@@ -168,7 +174,7 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 		if !ok {
 			return errors.New("NATS 查詢 handler 格式轉換失敗")
 		}
-		handlerScript, ok := rulesetHandler["script"].(string)
+		handlerScript := rulesetHandler["script"].(string)
 		if !ok {
 			return errors.New("NATS 查詢 handler map 格式轉換失敗")
 		}
@@ -178,7 +184,8 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 	}
 
 	if schema != "[ignore]" {
-		fileContent, err := os.ReadFile(schema)
+		regexSchema := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(schema)[1]
+		fileContent, err := os.ReadFile(regexSchema)
 		if err != nil {
 			return errors.New("NATS 查詢 schema.json 開啟失敗")
 		}

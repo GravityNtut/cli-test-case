@@ -13,14 +13,14 @@ Scenario:
     Then 使用nats jetstream 查詢 "'<ProductName>'" 的 "'<Ruleset>'" 存在，且參數 method "'<Method>'" event "'<Event>'" pk "'<Pk>'" desc "'<Desc>'" handler "'<Handler_script>'" schema "'<Schema>'" 正確
     Examples:
         | ProductName | Ruleset       | Method       | Event         |   Pk          |  Desc             |          Handler_script       |           Schema               |
-        | drink       | drinkCreated  | create       | drinkCreated  |   id          | "description"     |     ./assets/handler.js       |      ./assets/schema.json      |
+        | drink       | drinkCreated  | "create"     | "drinkCreated"|   "id"        | "description"     |     "./assets/handler.js"     |      "./assets/schema.json"    |
         | drink       | drinkUpdated  | update       | drinkUpdated  |   [ignore]    |   [ignore]        |            [ignore]           |           [ignore]             |
         | drink       | drinkDeleted  | delete       | drinkDeleted  |   [a]x32768   |   [a]x32768       |            [ignore]           |           [ignore]             |
         | drink       | [a]x32768     | delete       | drinkDeleted  |   [a]x32768   |   [a]x32768       |            [ignore]           |           [ignore]             |
-        | drink       | drinkCreated  | drinkCreated | drinkCreated  |      id       | "drink_data_desc" |     ./assets/handler.js       |      ./assets/schema.json      |
-        | drink       | drinkCreated  | drinkCreated | drinkCreated  |      id,num   | "drink_data_desc" |     ./assets/handler.js       |      ./assets/schema.json      |
+        | drink       | drinkCreated  | drinkCreated | drinkCreated  |      id       | "drink_data_desc" |     "./assets/handler.js"     |      ./assets/schema.json      |
+        | drink       | drinkCreated  | drinkCreated | drinkCreated  |      id,num   | "drink_data_desc" |     ./assets/handler.js       |      "./assets/schema.json"    |
         | drink       | drinkCreated  | 中文         | 中文           |     中文      |      ""           |     ./assets/handler.js       |      ./assets/schema.json      |
-        | drink       | drinkCreated  | _-*=_?+@     | _-*=_?+@      |   _-*=_?+@    | "drink_data_desc" |     ./assets/handler.js       |      ./assets/schema.json      |
+        | drink       | drinkCreated  | _-*=_?+@     | _-*=_?+@      |   _-*=_?+@    | "drink data desc" |     ./assets/handler.js       |      ./assets/schema.json      |
         | drink       | 中文          |  create      |   drinkCreated|   [ignore]    |    [ignore]       |             [ignore]          |            [ignore]            |
         | drink       | _-*=_?+@      |  create      |   drinkCreated|   [ignore]    |    [ignore]       |             [ignore]          |            [ignore]            |
 

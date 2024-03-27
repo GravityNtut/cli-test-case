@@ -11,7 +11,7 @@ Given 已開啟服務dispatcher
 	Then 使用 nats jetstream 查詢 "'<ProductName>'" 存在
 	Examples:
 	|  ID  | ProductName | Description  | 		Schema         |
-	| M(1) | drink       | "description"| ./assets/schema.json |
+	| M(1) | drink       | "description"|"./assets/schema.json"|
 	| M(2) |[a]x240      | "description"| ./assets/schema.json |
 	| M(3) | drink       |     ""       | ./assets/schema.json |
 	| M(4) | drink       |     " " 	    | ./assets/schema.json |
@@ -39,7 +39,7 @@ Given 已開啟服務dispatcher
 	And 應有錯誤訊息 "'<Error_message>'"
 	Examples:
 	|   ID  | ProductName   | Description    | 			Schema       			   | Error_message     |
-	| E2(1) | _-*\($\)?@    | "description"  | 		./assets/schema.json  		   | 			       |
+	| E2(1) | _-*\($\)?@    | "description"  | 		"./assets/schema.json" 		   | 			       |
 	| E2(2) | 中文		 	| "description"   | 	./assets/schema.json  		   |                    |
 	| E2(3) | [null]        | "description"  |	    ./assets/schema.json  		   |				   |
 	| E2(4) | drink         | "description"  | 		notExist.json 				   |				   |
