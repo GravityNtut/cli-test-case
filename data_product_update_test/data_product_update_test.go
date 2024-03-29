@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 	"test-case/testutils"
 	"testing"
@@ -46,11 +47,7 @@ func UpdateDataProductCommand(dataProduct string, description string, enable str
 	commandString := "../gravity-cli product update "
 	commandString += dataProduct
 	if description != "[ignore]" {
-		if description == "[null]" {
-			commandString += " --desc"
-		} else {
-			commandString += " --desc \"" + description + "\""
-		}
+		commandString += " --desc " + description
 	}
 
 	if enable != "[ignore]" {
@@ -62,7 +59,7 @@ func UpdateDataProductCommand(dataProduct string, description string, enable str
 	}
 
 	if schema != "[ignore]" {
-		commandString += " --schema ./assets/" + schema
+		commandString += " --schema " + schema
 	}
 	commandString += " -s " + ut.Config.JetstreamURL
 	ut.ExecuteShell(commandString)
@@ -142,7 +139,8 @@ func DataProductUpdateSuccess(dataProduct string, description string, schema str
 	}
 
 	if schema != "[ignore]" {
-		fileContent, err := os.ReadFile("./assets/" + schema)
+		regexSchema := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(schema)[1]
+		fileContent, err := os.ReadFile(regexSchema)
 		if err != nil {
 			return err
 		}
@@ -166,7 +164,8 @@ func DataProductUpdateSuccess(dataProduct string, description string, schema str
 	}
 
 	if description != "[ignore]" {
-		if description != newJsonData.Desc {
+		regexDesc := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(description)[1]
+		if regexDesc != newJsonData.Desc {
 			return errors.New("description內容不同")
 		}
 	}
@@ -207,12 +206,12 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有data product "([^"]*)"$`, ut.CreateDataProduct)
-	ctx.Given(`^儲存nats現有data product "([^"]*)" 副本$`, StoreNowDataProduct)
-	ctx.When(`^更新data product "([^"]*)" 註解 "([^"]*)" "([^"]*)" schema檔案 "([^"]*)"$`, UpdateDataProductCommand)
+	ctx.Given(`^已有data product "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.Given(`^儲存nats現有data product "'(.*?)'" 副本$`, StoreNowDataProduct)
+	ctx.When(`^更新data product "'(.*?)'" 註解 "'(.*?)'" "'(.*?)'" schema檔案 "'(.*?)'"$`, UpdateDataProductCommand)
 	ctx.Then(`^data product更改成功$`, UpdateDataProductCommandSuccess)
 	ctx.Then(`^data product更改失敗$`, UpdateDataProductCommandFail)
-	ctx.Then(`^應有錯誤訊息 "([^"]*)"$`, AssertErrorMessages)
-	ctx.Then(`^使用nats驗證data product "([^"]*)" description "([^"]*)" schema檔案 "([^"]*)" enabled "([^"]*)" 更改成功`, DataProductUpdateSuccess)
-	ctx.Then(`^使用nats驗證data product "([^"]*)" description "([^"]*)" schema檔案 "([^"]*)" enabled "([^"]*)" 資料無任何改動$`, DataProductNotChanges)
+	ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
+	ctx.Then(`^使用nats驗證data product "'(.*?)'" description "'(.*?)'" schema檔案 "'(.*?)'" enabled "'(.*?)'" 更改成功`, DataProductUpdateSuccess)
+	ctx.Then(`^使用nats驗證data product "'(.*?)'" description "'(.*?)'" schema檔案 "'(.*?)'" enabled "'(.*?)'" 資料無任何改動$`, DataProductNotChanges)
 }
