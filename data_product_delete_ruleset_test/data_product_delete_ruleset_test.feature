@@ -6,23 +6,23 @@ Scenario:
 
 #Scenario
     Scenario: 針對刪除data product ruleset成功情境
-    Given 已有date product "drink"
-    Given 已有data product 的 ruleset "drink" "drinkCreated"
-    When 刪除 "<ProductName>" 的 ruleset "<RulesetName>"
+    Given 已有date product "'drink'"
+    Given 已有data product 的 ruleset "'drink'" "'drinkCreated'"
+    When 刪除 "'<ProductName>'" 的 ruleset "'<RulesetName>'"
     Then 刪除成功
-    Then 使用gravity-cli 查詢 "<ProductName>" 的 "<RulesetName>" 不存在
+    Then 使用gravity-cli 查詢 "'<ProductName>'" 的 "'<RulesetName>'" 不存在
     Examples:
         | ProductName | RulesetName     |
         | drink       | drinkCreated    |
 
 #Scenario
     Scenario: 針對刪除data product ruleset失敗情境
-    Given 已有date product "drink"
-    Given 已有data product 的 ruleset "drink" "drinkCreated"
-    When 刪除 "<ProductName>" 的 ruleset "<RulesetName>"
+    Given 已有date product "'drink'"
+    Given 已有data product 的 ruleset "'drink'" "'drinkCreated'"
+    When 刪除 "'<ProductName>'" 的 ruleset "'<RulesetName>'"
     Then 刪除失敗
     Examples:
-        | ProductName | RulesetName |
+        | ProductName  | RulesetName  |
         | drink        | NotExists    |
         | NotExists    | drinkCreated |
-        |              |              |
+        |   [null]     |    [null]    |
