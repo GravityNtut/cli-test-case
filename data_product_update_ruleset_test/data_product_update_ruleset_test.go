@@ -171,8 +171,8 @@ func ValidateRulesetUpdate(dataProduct string, ruleset string, method string, ev
 		if err != nil {
 			return errors.New("使用nats驗證時 handler.js 開啟失敗")
 		}
-		rulesetHandler, _ := jsonData.Rules[ruleset].Handler.(map[string]interface{})
-		handlerScript, _ := rulesetHandler["script"].(string)
+		rulesetHandler := jsonData.Rules[ruleset].Handler.(map[string]interface{})
+		handlerScript := rulesetHandler["script"].(string)
 		if string(fileContent) != handlerScript {
 			return errors.New("handler更改失敗")
 		}

@@ -170,14 +170,8 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 		if err != nil {
 			return errors.New("NATS 查詢 handler.js 開啟失敗")
 		}
-		rulesetHandler, ok := jsonData.Rules[ruleset].Handler.(map[string]interface{})
-		if !ok {
-			return errors.New("NATS 查詢 handler 格式轉換失敗")
-		}
+		rulesetHandler := jsonData.Rules[ruleset].Handler.(map[string]interface{})
 		handlerScript := rulesetHandler["script"].(string)
-		if !ok {
-			return errors.New("NATS 查詢 handler map 格式轉換失敗")
-		}
 		if string(fileContent) != handlerScript {
 			return errors.New("NATS 查詢 ruleset handler.js 資訊不正確")
 		}
