@@ -59,13 +59,21 @@ func SearchDataProductByJetstreamFail(dataProduct string) error {
 }
 
 func DeleteDataProductCommand(dataProduct string) error {
-	commandString := "../gravity-cli product delete " + dataProduct + " -s " + ut.Config.JetstreamURL
+	commandString := "../gravity-cli product delete "
+	if dataProduct != "[null]" {
+		commandString += dataProduct
+	}
+	commandString += " -s " + ut.Config.JetstreamURL
 	ut.ExecuteShell(commandString)
 	return nil
 }
 
-func DeleteDataProductSuccess() error {
-	return ut.CmdResult.Err
+func DeleteDataProductSuccess(productName string) error {
+	outStr := ut.CmdResult.Stdout
+	if outStr == "Product \""+productName+"\" was deleted\n" {
+		return nil
+	}
+	return errors.New("Cli回傳訊息錯誤")
 }
 
 func DeleteDataProductFail() error {
@@ -84,10 +92,10 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有data product "([^"]*)"$`, ut.CreateDataProduct)
-	ctx.When(`^刪除data product "([^"]*)"$`, DeleteDataProductCommand)
-	ctx.Then(`^data product 刪除成功$`, DeleteDataProductSuccess)
-	ctx.Then(`^data product 刪除失敗$`, DeleteDataProductFail)
-	ctx.Then(`^使用gravity-cli查詢data product 列表 "([^"]*)" 不存在$`, SearchDataProductByCLIFail)
-	ctx.Then(`^使用nats jetstream 查詢 data product 列表 "([^"]*)" 不存在$`, SearchDataProductByJetstreamFail)
+	ctx.Given(`^已有 data product "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.When(`^刪除 data product "'(.*?)'"$`, DeleteDataProductCommand)
+	ctx.Then(`^Cli 回傳 "'(.*?)'" 刪除成功$`, DeleteDataProductSuccess)
+	ctx.Then(`^Cli 回傳刪除失敗$`, DeleteDataProductFail)
+	ctx.Then(`^使用 gravity-cli 查詢 "'(.*?)'" 不存在$`, SearchDataProductByCLIFail)
+	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 不存在$`, SearchDataProductByJetstreamFail)
 }

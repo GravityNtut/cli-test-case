@@ -29,7 +29,14 @@ func TestFeatures(t *testing.T) {
 }
 
 func DeleteRulesetCommand(productName string, rulesetName string) error {
-	commandString := "../gravity-cli product ruleset delete " + productName + " " + rulesetName + " -s " + ut.Config.JetstreamURL
+	commandString := "../gravity-cli product ruleset delete "
+	if productName != "[null]" {
+		commandString += " " + productName
+	}
+	if rulesetName != "[null]" {
+		commandString += " " + rulesetName
+	}
+	commandString += " -s " + ut.Config.JetstreamURL
 	ut.ExecuteShell(commandString)
 	return nil
 }
@@ -65,10 +72,10 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	})
 	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有date product "([^"]*)"$`, ut.CreateDataProduct)
-	ctx.Given(`^已有data product 的 ruleset "([^"]*)" "([^"]*)"$`, ut.CreateDataProductRuleset)
-	ctx.When(`^刪除 "([^"]*)" 的 ruleset "([^"]*)"$`, DeleteRulesetCommand)
+	ctx.Given(`^已有date product "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.Given(`^已有data product 的 ruleset "'(.*?)'" "'(.*?)'"$`, ut.CreateDataProductRuleset)
+	ctx.When(`^刪除 "'(.*?)'" 的 ruleset "'(.*?)'"$`, DeleteRulesetCommand)
 	ctx.Then(`^刪除失敗$`, DeleteRulesetCommandFailed)
 	ctx.Then(`^刪除成功$`, DeleteRulesetCommandSuccess)
-	ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 的 "([^"]*)" 不存在$`, SearchRulesetByCLINotExists)
+	ctx.Then(`^使用gravity-cli 查詢 "'(.*?)'" 的 "'(.*?)'" 不存在$`, SearchRulesetByCLINotExists)
 }
