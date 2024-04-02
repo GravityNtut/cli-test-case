@@ -29,6 +29,17 @@ dep:
     RUN go mod download
     COPY +build-cli/gravity-cli .
     COPY . .
+lint:
+    FROM +dep
+    RUN curl -sfL https://github.com/golangci/golangci-lint/releases/download/v1.55.1/golangci-lint-1.55.1-linux-amd64.tar.gz | \
+            tar zx -C /usr/local/bin/ --strip-components=1 golangci-lint-1.55.1-linux-amd64/golangci-lint && \
+        curl -sfL https://github.com/goreleaser/goreleaser/releases/download/v1.22.1/goreleaser_Linux_x86_64.tar.gz | tar -xz -C /usr/local/bin/ && \
+        chmod +x /usr/local/bin/goreleaser
+    COPY go.mod go.sum ./
+    RUN go mod download
+    COPY .golangci.yml ./
+    RUN golangci-lint --version && \
+        golangci-lint run --timeout 5m0s ./...
 
 integration-test: 
     FROM +dep
@@ -48,3 +59,4 @@ integration-test:
     SAVE ARTIFACT coverage_result.html AS LOCAL .
 ci:
     BUILD +integration-test
+    BUILD +lint
