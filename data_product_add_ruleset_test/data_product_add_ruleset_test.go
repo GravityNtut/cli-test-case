@@ -153,9 +153,30 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 	desc = ut.ProcessString(desc)
 	pk = ut.ProcessString(pk)
 
-	if ruleset != jsonData.Rules[ruleset].Name && method != jsonData.Rules[ruleset].Method && event != jsonData.Rules[ruleset].Event && desc != jsonData.Rules[ruleset].Desc {
-		return errors.New("NATS 查詢 ruleset 資訊不正確")
+	if ruleset != "[null]" {
+		if ruleset != jsonData.Rules[ruleset].Name {
+			return errors.New("NATS 查詢 ruleset 名稱不正確")
+		}
 	}
+
+	if method != "[ignore]" {
+		if method != jsonData.Rules[ruleset].Method {
+			return errors.New("NATS 查詢 ruleset method資訊不正確")
+		}
+	}
+
+	if event != "[ignore]" {
+		if event != jsonData.Rules[ruleset].Event {
+			return errors.New("NATS 查詢 ruleset event資訊不正確")
+		}
+	}
+
+	if desc != "[ignore]" {
+		if desc != jsonData.Rules[ruleset].Desc {
+			return errors.New("NATS 查詢 ruleset desc資訊不正確")
+		}
+	}
+
 
 	if pk != "[ignore]" {
 		expectedPK := strings.Join(jsonData.Rules[ruleset].PrimaryKey, ",")
