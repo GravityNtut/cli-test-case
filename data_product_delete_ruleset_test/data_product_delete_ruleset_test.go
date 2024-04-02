@@ -70,12 +70,12 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		ut.ClearDataProducts()
 		return ctx, nil
 	})
-	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有date product "'(.*?)'"$`, ut.CreateDataProduct)
-	ctx.Given(`^已有data product 的 ruleset "'(.*?)'" "'(.*?)'"$`, ut.CreateDataProductRuleset)
+	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
+	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
+	ctx.Given(`^已有 date product "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.Given(`^已有 data product 的 ruleset "'(.*?)'" "'(.*?)'"$`, ut.CreateDataProductRuleset)
 	ctx.When(`^刪除 "'(.*?)'" 的 ruleset "'(.*?)'"$`, DeleteRulesetCommand)
 	ctx.Then(`^刪除失敗$`, DeleteRulesetCommandFailed)
 	ctx.Then(`^刪除成功$`, DeleteRulesetCommandSuccess)
-	ctx.Then(`^使用gravity-cli 查詢 "'(.*?)'" 的 "'(.*?)'" 不存在$`, SearchRulesetByCLINotExists)
+	ctx.Then(`^使用 gravity-cli 查詢 "'(.*?)'" 的 "'(.*?)'" 不存在$`, SearchRulesetByCLINotExists)
 }
