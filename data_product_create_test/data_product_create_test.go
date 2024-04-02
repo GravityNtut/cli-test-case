@@ -110,8 +110,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
+	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
+	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
 	ctx.When(`^創建 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
 	ctx.Then(`^Cli 回傳 "'(.*?)'" 建立成功$`, CreateDataProductCommandSuccess)
 	ctx.Then(`^Cli 回傳建立失敗$`, CreateDataProductCommandFail)

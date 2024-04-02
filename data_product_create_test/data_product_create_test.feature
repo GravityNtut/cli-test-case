@@ -1,8 +1,8 @@
 Feature: Data Product create
 
 Scenario:
-Given 已開啟服務nats
-Given 已開啟服務dispatcher
+Given 已開啟服務 nats
+Given 已開啟服務 dispatcher
 #Scenario
 	Scenario: 使用者使用product create指令來建立data product，成功情境
 	When 創建 data product "'<ProductName>'" 使用參數 "'<Description>'" "'<Schema>'"
