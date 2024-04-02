@@ -7,9 +7,9 @@ Given 已開啟服務dispatcher
 	Scenario: 針對更新data product ruleset成功情境
 	Given 已有data product "'drink'"
     Given 已有data product 的 ruleset "'drink'" "'drinkCreated'" 
-	When "'<ProductName>'" 更新ruleset "'<Ruleset>'" 參數 method "'<Method>'" event "'<Event>'" pk "'<Pk>'" desc "'<Desc>'" handler "'<Handler_script>'" schema "'<Schema>'" enabled "'<Enabled>'"
-	Then ruleset 更改成功
-	And 使用nats驗證 data product "'drink'" 的 ruleset "'drinkCreated'" 更改成功 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
+	When 更新 dataproduct "'<ProductName>'" ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
+	Then Cli回傳更改成功
+	And 使用nats jetstream查詢 "'drink'" 的 "'drinkCreated'" 參數更改成功 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
 	Examples:
     |  ID  | ProductName | Ruleset       | Event         | Method    | 		Schema          | 		Handler_script	   | Pk       | Desc          | Enabled  |
 	| M(1) | drink       | drinkCreated  | drinkCreated  | create    | ./assets/schema.json |  ./assets/handler.js     | id       |  description  | [true]   |
@@ -32,10 +32,10 @@ Given 已開啟服務dispatcher
 	Given 已有data product "'drink'"
     Given 已有data product 的 ruleset "'drink'" "'drinkCreated'" 
 	Given 儲存nats現有data product ruleset 副本 "'drink'" "'drinkCreated'" 
-	When "'<ProductName>'" 更新ruleset "'<Ruleset>'" 參數 method "'<Method>'" event "'<Event>'" pk "'<Pk>'" desc "'<Desc>'" handler "'<Handler_script>'" schema "'<Schema>'" enabled "'<Enabled>'"
-	Then ruleset 更改失敗
+	When 更新 dataproduct "'<ProductName>'" ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
+	Then Cli回傳更改失敗
 	And 應有錯誤訊息 "'<Error_message>'"
-	And 使用nats驗證 data product "'drink'" 的 ruleset "'drinkCreated'" 資料無任何改動 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
+	And 使用 nats jetstream 查詢 data product "'drink'" 的 "'drinkCreated'" 資料無任何改動 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
 	Examples:
 	|  ID   | ProductName | Ruleset       | Event         | Method    | 		Schema         	 	 | 		Handler_script	   | Pk       | Desc          | Enabled  | Error_message |
 	| E1(1) | [null]	  | [null]		  | [ignore]	  | [ignore]  | 		[ignore]        	 | 		  [ignore]         | [ignore] | [ignore]      | [ignore] | 		         |
