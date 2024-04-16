@@ -29,8 +29,8 @@ Given 已開啟服務 dispatcher
 	And 使用 nats jetstream 查詢 "'drink'" 參數無任何改動 "'<Description>'" "'<Schema>'" "'<Enabled>'"
 	Examples:
 	|  ID   | ProductName | Description  | 	    Schema         		 | Enabled   | Error_message   |
-	| E1(1) | not_exist   | description  | ./assets/schema.json 	 | [ignore]  |                 |
-	| E1(2) | [null]      | description  | ./assets/schema.json      | [ignore]  | 			       |
+	| E1(1) | not_exist   | [ignore]  	 | 		[ignore] 			 | [ignore]  |                 |
+	| E1(2) | [null]      | [ignore] 	 |		[ignore]  		     | [ignore]  | 			       |
 	| E1(3) | drink		  | [ignore]     | 		""					 | [ignore]  |                 |
 	| E1(4) | drink		  | [ignore]     | ./assets/fail_schema.json | [ignore]  |                 |
 	| E1(5) | drink		  | [ignore]     |		not_exist.json		 | [ignore]  |                 |
