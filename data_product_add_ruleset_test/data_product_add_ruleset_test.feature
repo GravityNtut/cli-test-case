@@ -14,20 +14,19 @@ Scenario:
     Examples:
         |  ID   | ProductName | Ruleset       | Method       | Event         |   Pk          |  Desc             |          Handler_script       |           Schema               |
         | M(1)  | drink       | drinkCreated  | create       | drinkCreated  |   id          |  description      |     ./assets/handler.js       |      ./assets/schema.json      |
-        | M(2)  | drink       | _-*=_?+@      | create       | drinkCreated  |   [ignore]    |    [ignore]       |             [ignore]          |            [ignore]            |
-        | M(3)  | drink       | 中文          |  create      | drinkCreated  |   [ignore]    |    [ignore]       |             [ignore]          |            [ignore]            |
-        | M(4)  | drink       | [a]x32768     | create       | drinkCreated  |   [a]x32768   |   [a]x32768       |            [ignore]           |           [ignore]             |
+        | M(2)  | drink       | _-*=_?+@      | create       | drinkCreated  |   id          |  description      |     ./assets/handler.js       |      ./assets/schema.json      |
+        | M(3)  | drink       | 中文          |  create      | drinkCreated  |   id          |  description      |     ./assets/handler.js       |      ./assets/schema.json      |
+        | M(4)  | drink       | [a]x32768     | create       | drinkCreated  |   id          |  description      |     ./assets/handler.js       |      ./assets/schema.json      |
         | M(5)  | drink       | drinkCreated  | " "          | " "           |   " "         |  " "              |     ./assets/handler.js       |      ./assets/schema.json      |
-        | M(6)  | drink       | drinkCreated  | _-*=_?+@     | _-*=_?+@      |   _-*=_?+@    | "drink data desc" |     ./assets/handler.js       |      ./assets/schema.json      |
+        | M(6)  | drink       | drinkCreated  | _-*=_?+@     | _-*=_?+@      |   _-*=_?+@    |  description      |     ./assets/handler.js       |      ./assets/schema.json      |
         | M(7)  | drink       | drinkCreated  | 中文         | 中文           |     中文      |   description     |     ./assets/handler.js       |      ./assets/schema.json      |
-        | M(8)  | drink       | drinkCreated  | 中文         | 中文           |     中文      |      ""           |     ./assets/handler.js       |      ./assets/schema.json      |
-        | M(9)  | drink       | drinkCreated  | [a]x32768    | [a]x32768     |   id          |  description      |     ./assets/handler.js       |      ./assets/schema.json      |
-        | M(10) | drink       | drinkCreated  | "create"     | "drinkCreated"|   "id"        | "drink data desc" |     "./assets/handler.js"     |      "./assets/schema.json"    |
-        | M(11) | drink       | drinkCreated  | create       | drinkCreated  |      id,id2   | description       |     ./assets/handler.js       |      "./assets/schema.json"    |
-        | M(12) | drink       | drinkCreated  | create       | drinkCreated  |   ""          |  description      |     ./assets/handler.js       |      ./assets/schema.json      |
-        | M(13) | drink       | drinkCreated  | create       | drinkCreated  |   [ignore]    |    [ignore]       |             [ignore]          |            [ignore]            |
-        | M(14) | drink       | drinkCreated  | create       | drinkCreated  |   [a]x32768   |   [a]x32768       |            [ignore]           |           [ignore]             |
-        | M(15) | drink       | drinkCreated  | create       | drinkCreated  |   id          |  ""               |     ./assets/handler.js       |      ./assets/schema.json      |
+        | M(8)  | drink       | drinkCreated  | [a]x32768    | [a]x32768     |   id          |  description      |     ./assets/handler.js       |      ./assets/schema.json      |
+        | M(9)  | drink       | drinkCreated  | "create"     | "drinkCreated"|   "id"        | "drink data desc" |     "./assets/handler.js"     |      "./assets/schema.json"    |
+        | M(10) | drink       | drinkCreated  | create       | drinkCreated  |      id,id2   | description       |     ./assets/handler.js       |      "./assets/schema.json"    |
+        | M(11) | drink       | drinkCreated  | create       | drinkCreated  |   ""          |  description      |     ./assets/handler.js       |      ./assets/schema.json      |
+        | M(12) | drink       | drinkCreated  | create       | drinkCreated  |   [ignore]    |    [ignore]       |             [ignore]          |            [ignore]            |
+        | M(13) | drink       | drinkCreated  | create       | drinkCreated  |   [a]x32768   |   [a]x32768       |     ./assets/handler.js       |      ./assets/schema.json      |
+        | M(14) | drink       | drinkCreated  | create       | drinkCreated  |   id          |  ""               |     ./assets/handler.js       |      ./assets/schema.json      |
 
 #Scenario
     Scenario: 針對data product加入ruleset，重複建立情境
@@ -51,7 +50,7 @@ Scenario:
     And 應有錯誤訊息 "'<Error_message>'"
     Examples:
         | ID     | ProductName | Ruleset       | Method       | Event         |   Pk     |  Desc            |        Handler_script       |              Schema               |              Error_message             |
-        | E2(1)  | NotExists   |  drinkCreated |  create      | drinkCreated  | [ignore] |   [ignore]       |           [ignore]          |          [ignore]                 |                                        |
+        | E2(1)  | NotExists   |  drinkCreated |  create      | drinkCreated  |   id     |   description    |     ./assets/handler.js     |      ./assets/schema.json         |                                        |
         | E2(2)  |  [null]     |    [null]     | [ignore]     |   [ignore]    | [ignore] |   [ignore]       |           [ignore]          |           [ignore]                |                                        |
         | E2(3)  | drink       |    [null]     | [ignore]     |   [ignore]    | [ignore] |   [ignore]       |           [ignore]          |           [ignore]                |                                        |
         | E2(4)  | drink       | drinkCreated  | ""           | ""            |   ""     |  ""              |     ./assets/handler.js     |      ./assets/schema.json         |                                        |
