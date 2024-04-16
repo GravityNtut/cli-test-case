@@ -16,4 +16,4 @@ earthly:
   script:
     - earthly --ci --push -P +ci
   tags:
-    - test
+    - Run in Docker
