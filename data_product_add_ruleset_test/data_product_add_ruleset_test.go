@@ -215,10 +215,10 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Given(`^已有data product "'(.*?)'"$`, ut.CreateDataProduct)
 
-	ctx.When(`^"'(.*?)'" 創建ruleset "'(.*?)'" method "'(.*?)'" event "'(.*?)'" pk "'(.*?)'" desc "'(.*?)'" handler "'(.*?)'" schema "'(.*?)'"$`, AddRulesetCommand)
+	ctx.When(`^"'(.*?)'" 創建ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, AddRulesetCommand)
 	ctx.Then(`^ruleset 創建失敗$`, AddRulesetCommandFailed)
 	ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
 	ctx.Then(`^使用gravity-cli 查詢 "'(.*?)'" 的 "'(.*?)'" 存在$`, SearchRulesetByCLISuccess)
-	ctx.Then(`使用nats jetstream 查詢 "'(.*?)'" 的 "'(.*?)'" 存在，且參數 method "'(.*?)'" event "'(.*?)'" pk "'(.*?)'" desc "'(.*?)'" handler "'(.*?)'" schema "'(.*?)'" 正確$`, SearchRulesetByNatsSuccess)
+	ctx.Then(`使用nats jetstream 查詢 "'(.*?)'" 的 "'(.*?)'" 存在，且參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" 正確$`, SearchRulesetByNatsSuccess)
 	ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
 }
