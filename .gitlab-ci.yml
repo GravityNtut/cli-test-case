@@ -16,4 +16,5 @@ earthly:
   script:
     - earthly --org TaroBill --sat my-satellite --ci --push -P +ci
   tags:
+    - On Host
     - Run in Docker
