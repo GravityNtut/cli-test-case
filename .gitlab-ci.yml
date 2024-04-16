@@ -8,12 +8,12 @@ variables:
 image: earthly/earthly:v0.8.5
 
 before_script:
-    - earthly bootstrap
+    # - earthly bootstrap
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD 
 
 earthly:
   stage: build
   script:
-    - earthly --ci --push -P +ci
+    - earthly --org TaroBill --sat my-satellite --ci --push +ci
   tags:
     - Docker in Docker
