@@ -8,7 +8,6 @@ variables:
 image: earthly/earthly:v0.8.5
 
 before_script:
-    - earthly bootstrap
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD 
 
 earthly:
