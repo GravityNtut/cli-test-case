@@ -14,6 +14,6 @@ before_script:
 earthly:
   stage: build
   script:
-    - earthly --ci --push -P +ci
+    - earthly --org TaroBill --sat my-satellite --ci --push -P +ci
   tags:
-    - Docker in Docker
+    - Run in Docker
