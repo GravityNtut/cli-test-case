@@ -45,7 +45,9 @@ func TestFeatures(t *testing.T) {
 
 func UpdateDataProductCommand(dataProduct string, description string, enable string, schema string) error {
 	commandString := "../gravity-cli product update "
-	commandString += dataProduct
+	if dataProduct != "[null]" {
+		commandString += dataProduct
+	}
 	if description != "[ignore]" {
 		commandString += " --desc " + description
 	}
@@ -142,7 +144,7 @@ func DataProductUpdateSuccess(dataProduct string, description string, schema str
 		regexSchema := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(schema)[1]
 		fileContent, err := os.ReadFile(regexSchema)
 		if err != nil {
-			return err
+			return errors.New("使用nats驗證時 schema.json 開啟失敗")
 		}
 		schemaString, _ := json.Marshal(newJsonData.Schema)
 		var jsonInterface interface{}
@@ -204,14 +206,14 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有data product "'(.*?)'"$`, ut.CreateDataProduct)
-	ctx.Given(`^儲存nats現有data product "'(.*?)'" 副本$`, StoreNowDataProduct)
-	ctx.When(`^更新data product "'(.*?)'" 註解 "'(.*?)'" "'(.*?)'" schema檔案 "'(.*?)'"$`, UpdateDataProductCommand)
-	ctx.Then(`^data product更改成功$`, UpdateDataProductCommandSuccess)
-	ctx.Then(`^data product更改失敗$`, UpdateDataProductCommandFail)
+	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
+	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
+	ctx.Given(`^已有 data product "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.Given(`^儲存 nats 現有 data product 副本 "'(.*?)'"$`, StoreNowDataProduct)
+	ctx.When(`^更新 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, UpdateDataProductCommand)
+	ctx.Then(`^Cli 回傳更改成功$`, UpdateDataProductCommandSuccess)
+	ctx.Then(`^Cli 回傳更改失敗$`, UpdateDataProductCommandFail)
 	ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
-	ctx.Then(`^使用nats驗證data product "'(.*?)'" description "'(.*?)'" schema檔案 "'(.*?)'" enabled "'(.*?)'" 更改成功`, DataProductUpdateSuccess)
-	ctx.Then(`^使用nats驗證data product "'(.*?)'" description "'(.*?)'" schema檔案 "'(.*?)'" enabled "'(.*?)'" 資料無任何改動$`, DataProductNotChanges)
+	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 參數更改成功 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, DataProductUpdateSuccess)
+	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 參數無任何改動 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, DataProductNotChanges)
 }
