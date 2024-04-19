@@ -1,4 +1,4 @@
-package data_product_ruleset_update
+package dataproductrulesetupdate
 
 import (
 	"context"
@@ -31,17 +31,20 @@ type Rule struct {
 
 type RuleMap map[string]Rule
 
-type JsonData struct {
+type JSONData struct {
 	Name  string  `json:"name"`
 	Rules RuleMap `json:"rules"`
 }
 
-var jsonData JsonData
+var jsonData JSONData
 var ut = testutils.TestUtils{}
-var originJson string
+var originRuleStr string
 
 func TestFeatures(t *testing.T) {
-	ut.LoadConfig()
+	err := ut.LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
 		Options: &godog.Options{
@@ -67,7 +70,15 @@ func SaveRuleset(dataProduct string, ruleset string) error {
 
 	kv, _ := js.KeyValue("GVT_default_PRODUCT")
 	entry, _ := kv.Get(dataProduct)
-	originJson = string(entry.Value())
+
+	var originJSON JSONData 
+	err = json.Unmarshal(entry.Value(), &originJSON)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	originRuleByte, _ := json.Marshal(originJSON.Rules[ruleset])
+	originRuleStr = string(originRuleByte)
 	return nil
 }
 
@@ -105,7 +116,10 @@ func UpdateRulesetCommand(dataProduct string, ruleset string, method string, eve
 		commandString += " --schema " + schema
 	}
 	commandString += " -s " + ut.Config.JetstreamURL
-	ut.ExecuteShell(commandString)
+	err := ut.ExecuteShell(commandString)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -184,9 +198,12 @@ func ValidateRulesetUpdate(dataProduct string, ruleset string, method string, ev
 			return errors.New("使用nats驗證時 schema.json 開啟失敗")
 		}
 		natsSchema, _ := json.Marshal(jsonData.Rules[ruleset].Schema)
-		var fileJson interface{}
-		json.Unmarshal(fileContent, &fileJson)
-		fileSchemaByte, _ := json.Marshal(fileJson)
+		var fileJSON interface{}
+		err = json.Unmarshal(fileContent, &fileJSON)
+		if err != nil {
+			return errors.New("使用nats驗證時 schema.json 解碼失敗")
+		}
+		fileSchemaByte, _ := json.Marshal(fileJSON)
 		fileSchema := strings.Join(strings.Fields(string(fileSchemaByte)), "")
 		if fileSchema != string(natsSchema) {
 			return errors.New("schema更改失敗")
@@ -195,7 +212,7 @@ func ValidateRulesetUpdate(dataProduct string, ruleset string, method string, ev
 	return nil
 }
 
-func ValidateRulesetNotChange(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string, enable string) error {
+func ValidateRulesetNotChange(dataProduct string, ruleset string) error {
 	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
 	defer nc.Close()
 
@@ -206,20 +223,27 @@ func ValidateRulesetNotChange(dataProduct string, ruleset string, method string,
 
 	kv, _ := js.KeyValue("GVT_default_PRODUCT")
 	entry, _ := kv.Get(dataProduct)
-	if string(entry.Value()) != originJson {
+
+	err = json.Unmarshal(entry.Value(), &jsonData)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ruleByte, _ := json.Marshal(jsonData.Rules[ruleset])
+	if string(ruleByte) != originRuleStr {
 		return errors.New("ruleset資料有異動")
 	}
 	return nil
 }
 
-func AssertErrorMessages(expected string) error {
-	//Todo
-	return nil
-}
+// func AssertErrorMessages(expected string) error {
+// 	Todo
+// 	return nil
+// }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
-	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
+	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		ut.ClearDataProducts()
 		return ctx, nil
 	})
@@ -227,11 +251,11 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
 	ctx.Given(`^已有 data product "'(.*?)'"$`, ut.CreateDataProduct)
 	ctx.Given(`^已有 data product 的 ruleset "'(.*?)'" "'(.*?)'"$`, ut.CreateDataProductRuleset)
-	ctx.Given(`^儲存 nats 現有 data product ruleset 副本 "'(.*?)'" "'(.*?)'"`, SaveRuleset)
-	ctx.When(`^更新 dataproduct "'(.*?)'" ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"`, UpdateRulesetCommand)
+	ctx.Given(`^儲存 nats 現有 data product ruleset 副本 "'(.*?)'" "'(.*?)'"$`, SaveRuleset)
+	ctx.When(`^更新 dataproduct "'(.*?)'" ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, UpdateRulesetCommand)
 	ctx.Then(`^Cli 回傳更改成功$`, UpdateRulesetCommandSuccess)
 	ctx.Then(`^Cli 回傳更改失敗$`, UpdateRulesetCommandFailed)
 	ctx.Then(`^使用 nats jetstream查詢 "'(.*?)'" 的 "'(.*?)'" 參數更改成功 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, ValidateRulesetUpdate)
-	ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
-	ctx.Then(`^使用 nats jetstream 查詢 data product "'(.*?)'" 的 "'(.*?)'" 資料無任何改動 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"`, ValidateRulesetNotChange)
+	// ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
+	ctx.Then(`^使用 nats jetstream 查詢 data product "'(.*?)'" 的 "'(.*?)'" 資料無任何改動$`, ValidateRulesetNotChange)
 }

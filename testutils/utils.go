@@ -37,7 +37,7 @@ func (testUtils *TestUtils) LoadConfig() error {
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal([]byte(str), &testUtils.Config)
+	err = json.Unmarshal(str, &testUtils.Config)
 	if err != nil {
 		return err
 	}
@@ -46,8 +46,19 @@ func (testUtils *TestUtils) LoadConfig() error {
 
 func (testUtils *TestUtils) ExecuteShell(command string) error {
 	f, err := os.Create("command.sh")
-	f.WriteString(command)
-	defer f.Close()
+	if err != nil {
+		return err
+	}
+	_, err = f.WriteString(command)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	cmd := exec.Command("sh", "./command.sh")
 
@@ -60,7 +71,7 @@ func (testUtils *TestUtils) ExecuteShell(command string) error {
 
 	cmdResultTmp.Stdout = stdout.String()
 	cmdResultTmp.Stderr = stderr.String()
-	return err
+	return nil 
 }
 
 func (testUtils *TestUtils) ProcessString(str string) string {
@@ -88,7 +99,10 @@ func (testUtils *TestUtils) ClearDataProducts() {
 		log.Fatal(err)
 	}
 
-	js.PurgeStream("KV_GVT_default_PRODUCT")
+	err = js.PurgeStream("KV_GVT_default_PRODUCT")
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func (testUtils *TestUtils) CheckNatsService() error {

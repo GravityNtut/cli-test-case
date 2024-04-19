@@ -34,8 +34,8 @@ Given 已開啟服務 dispatcher
 	Given 儲存 nats 現有 data product ruleset 副本 "'drink'" "'drinkCreated'" 
 	When 更新 dataproduct "'<ProductName>'" ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
 	Then Cli 回傳更改失敗
-	And 應有錯誤訊息 "'<Error_message>'"
-	And 使用 nats jetstream 查詢 data product "'drink'" 的 "'drinkCreated'" 資料無任何改動 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
+	# And 應有錯誤訊息 "'<Error_message>'"
+	And 使用 nats jetstream 查詢 data product "'drink'" 的 "'drinkCreated'" 資料無任何改動
 	Examples:
 	|  ID   | ProductName | Ruleset       | Event         | Method    | 		Schema         	 	 | 		Handler_script	   | Pk       | Desc          | Enabled  | Error_message |
 	| E1(1) | [null]	  | [null]		  | [ignore]	  | [ignore]  | 		[ignore]        	 | 		  [ignore]         | [ignore] | [ignore]      | [ignore] | 		         |

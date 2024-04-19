@@ -1,4 +1,4 @@
-package data_product_ruleset_add
+package dataproductrulesetadd
 
 import (
 	"context"
@@ -34,7 +34,7 @@ type Rule struct {
 
 type RuleMap map[string]Rule
 
-type JsonData struct {
+type JSONData struct {
 	Name            string      `json:"name"`
 	Desc            string      `json:"desc"`
 	Enabled         bool        `json:"enabled"`
@@ -47,12 +47,15 @@ type JsonData struct {
 	UpdatedAt       string      `json:"updatedAt"`
 }
 
-var jsonData JsonData
+var jsonData JSONData
 
 var ut = testutils.TestUtils{}
 
 func TestFeatures(t *testing.T) {
-	ut.LoadConfig()
+	err := ut.LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
 		Options: &godog.Options{
@@ -100,7 +103,10 @@ func AddRulesetCommand(dataProduct string, ruleset string, method string, event 
 		commandString += " --schema " + schema
 	}
 	commandString += " --enabled -s " + ut.Config.JetstreamURL
-	ut.ExecuteShell(commandString)
+	err := ut.ExecuteShell(commandString)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -177,7 +183,6 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 		}
 	}
 
-
 	if pk != "[ignore]" {
 		expectedPK := strings.Join(jsonData.Rules[ruleset].PrimaryKey, ",")
 		if pk != expectedPK {
@@ -205,9 +210,12 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 			return errors.New("NATS 查詢 schema.json 開啟失敗")
 		}
 		natsSchema, _ := json.Marshal(jsonData.Rules[ruleset].Schema)
-		var fileJson interface{}
-		json.Unmarshal(fileContent, &fileJson)
-		fileSchemaByte, _ := json.Marshal(fileJson)
+		var fileJSON interface{}
+		err = json.Unmarshal(fileContent, &fileJSON)
+		if err != nil {
+			return errors.New("使用nats驗證時 schema.json 解碼失敗")
+		}
+		fileSchemaByte, _ := json.Marshal(fileJSON)
 		fileSchema := strings.Join(strings.Fields(string(fileSchemaByte)), "")
 		if fileSchema != string(natsSchema) {
 			return errors.New("NATS 查詢 ruleset schema.json 資訊不正確")
@@ -216,30 +224,28 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 	return nil
 }
 
-func AssertErrorMessages(expected string) error {
-	// Todo
-	// if cmdResult.Stderr == expected {
-	// 	return nil
-	// }
-	// return fmt.Errorf("應有錯誤訊息: %s", expected)
-	return nil
-}
+// func AssertErrorMessages(expected string) error {
+// 	Todo
+// 	if cmdResult.Stderr == expected {
+// 		return nil
+// 	}
+// 	return fmt.Errorf("應有錯誤訊息: %s", expected)
+// 	return nil
+// }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
-	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
+	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		ut.ClearDataProducts()
 		return ctx, nil
 	})
 	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
-
 	ctx.Given(`^已有data product "'(.*?)'"$`, ut.CreateDataProduct)
-
 	ctx.When(`^"'(.*?)'" 創建ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, AddRulesetCommand)
 	ctx.Then(`^ruleset 創建失敗$`, AddRulesetCommandFailed)
 	ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
 	ctx.Then(`^使用gravity-cli 查詢 "'(.*?)'" 的 "'(.*?)'" 存在$`, SearchRulesetByCLISuccess)
 	ctx.Then(`使用nats jetstream 查詢 "'(.*?)'" 的 "'(.*?)'" 存在，且參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" 正確$`, SearchRulesetByNatsSuccess)
-	ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
+	// ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
 }

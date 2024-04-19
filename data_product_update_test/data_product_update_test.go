@@ -1,4 +1,4 @@
-package data_product_update
+package dataproductupdate
 
 import (
 	"context"
@@ -16,19 +16,22 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-type JsonData struct {
+type JSONData struct {
 	Name    string      `json:"name"`
 	Desc    string      `json:"desc"`
 	Enabled bool        `json:"enabled"`
 	Schema  interface{} `json:"schema"`
 }
 
-var newJsonData JsonData
+var newJSONData JSONData
 var ut testutils.TestUtils
-var originJsonData string
+var originJSONData string
 
 func TestFeatures(t *testing.T) {
-	ut.LoadConfig()
+	err := ut.LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
 		Options: &godog.Options{
@@ -64,8 +67,10 @@ func UpdateDataProductCommand(dataProduct string, description string, enable str
 		commandString += " --schema " + schema
 	}
 	commandString += " -s " + ut.Config.JetstreamURL
-	ut.ExecuteShell(commandString)
-
+	err := ut.ExecuteShell(commandString)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -95,17 +100,17 @@ func SearchDataProductByJetstreamSuccess(dataProduct string) error {
 	return errors.New("jetstream裡未創建成功")
 }
 
-func AssertErrorMessages(errorMessage string) error {
-	// TODO
-	// outErr := cmdResult.stderr
-	// if outErr == errorMessage {
-	// 	return nil
-	// }
-	// return errors.New("Cli回傳訊息錯誤")
-	return nil
-}
+// func AssertErrorMessages(errorMessage string) error {
+// 	TODO
+// 	outErr := cmdResult.stderr
+// 	if outErr == errorMessage {
+// 		return nil
+// 	}
+// 	return errors.New("Cli回傳訊息錯誤")
+// 	return nil
+// }
 
-func DataProductNotChanges(dataProduct string, description string, schema string, enabled string) error {
+func DataProductNotChanges(dataProduct string) error {
 	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
 	defer nc.Close()
 
@@ -117,7 +122,7 @@ func DataProductNotChanges(dataProduct string, description string, schema string
 	kv, _ := js.KeyValue("GVT_default_PRODUCT")
 	entry, _ := kv.Get(dataProduct)
 
-	if string(entry.Value()) == originJsonData {
+	if string(entry.Value()) == originJSONData {
 		return nil
 	}
 	return errors.New("與原始資料不符")
@@ -134,7 +139,7 @@ func DataProductUpdateSuccess(dataProduct string, description string, schema str
 
 	kv, _ := js.KeyValue("GVT_default_PRODUCT")
 	entry, _ := kv.Get(dataProduct)
-	err = json.Unmarshal((entry.Value()), &newJsonData)
+	err = json.Unmarshal((entry.Value()), &newJSONData)
 	if err != nil {
 		fmt.Println("解碼 JSON 時出現錯誤:", err)
 		return err
@@ -146,9 +151,12 @@ func DataProductUpdateSuccess(dataProduct string, description string, schema str
 		if err != nil {
 			return errors.New("使用nats驗證時 schema.json 開啟失敗")
 		}
-		schemaString, _ := json.Marshal(newJsonData.Schema)
+		schemaString, _ := json.Marshal(newJSONData.Schema)
 		var jsonInterface interface{}
-		json.Unmarshal(fileContent, &jsonInterface)
+		err = json.Unmarshal(fileContent, &jsonInterface)
+		if err != nil {
+			return errors.New("使用nats驗證時 schema.json 解碼失敗")
+		}
 		fileSchemaByte, _ := json.Marshal(jsonInterface)
 		fileSchema := strings.Join(strings.Fields(string(fileSchemaByte)), "")
 		if fileSchema != string(schemaString) {
@@ -167,12 +175,12 @@ func DataProductUpdateSuccess(dataProduct string, description string, schema str
 
 	if description != "[ignore]" {
 		regexDesc := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(description)[1]
-		if regexDesc != newJsonData.Desc {
+		if regexDesc != newJSONData.Desc {
 			return errors.New("description內容不同")
 		}
 	}
 
-	if dataProduct == newJsonData.Name && enabledBool == newJsonData.Enabled {
+	if dataProduct == newJSONData.Name && enabledBool == newJSONData.Enabled {
 		return nil
 	}
 	return errors.New("資料更新失敗")
@@ -196,12 +204,12 @@ func StoreNowDataProduct(dataProduct string) error {
 
 	kv, _ := js.KeyValue("GVT_default_PRODUCT")
 	entry, _ := kv.Get(dataProduct)
-	originJsonData = string(entry.Value())
+	originJSONData = string(entry.Value())
 	return nil
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
-	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
+	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		ut.ClearDataProducts()
 		return ctx, nil
 	})
@@ -213,7 +221,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.When(`^更新 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, UpdateDataProductCommand)
 	ctx.Then(`^Cli 回傳更改成功$`, UpdateDataProductCommandSuccess)
 	ctx.Then(`^Cli 回傳更改失敗$`, UpdateDataProductCommandFail)
-	ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
+	// ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
 	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 參數更改成功 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, DataProductUpdateSuccess)
-	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 參數無任何改動 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, DataProductNotChanges)
+	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 參數無任何改動$`, DataProductNotChanges)
 }

@@ -1,4 +1,4 @@
-package data_product_create
+package dataproductcreate
 
 import (
 	"context"
@@ -15,7 +15,10 @@ import (
 var ut = testutils.TestUtils{}
 
 func TestFeatures(t *testing.T) {
-	ut.LoadConfig()
+	err := ut.LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
 		Options: &godog.Options{
@@ -45,8 +48,10 @@ func CreateDataProductCommand(dataProduct string, description string, schema str
 		commandString += " --schema " + schema
 	}
 	commandString += " --enabled" + " -s " + ut.Config.JetstreamURL
-	ut.ExecuteShell(commandString)
-
+	err := ut.ExecuteShell(commandString)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -93,19 +98,14 @@ func SearchDataProductByJetstreamSuccess(dataProduct string) error {
 	return errors.New("jetstream裡未創建成功")
 }
 
-func AssertErrorMessages(errorMessage string) error {
-	// TODO
-	// outErr := ut.CmdResult.stderr
-	// if outErr == errorMessage {
-	// 	return nil
-	// }
-	// return errors.New("Cli回傳訊息錯誤")
-	return nil
-}
+// func AssertErrorMessages(errorMessage string) error {
+//	TODO
+// 	return nil
+// }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
-	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
+	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		ut.ClearDataProducts()
 		return ctx, nil
 	})
@@ -117,5 +117,5 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Then(`^Cli 回傳建立失敗$`, CreateDataProductCommandFail)
 	ctx.Then(`^使用 gravity-cli 查詢 "'(.*?)'" 存在$`, SearchDataProductByCLISuccess)
 	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 存在$`, SearchDataProductByJetstreamSuccess)
-	ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
+	// ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
 }

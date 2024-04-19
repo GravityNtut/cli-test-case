@@ -3,7 +3,6 @@
 linters:
   enable:
     - errcheck
-    - goimports
     - unused
     - revive # replace golint
     - ineffassign

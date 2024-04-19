@@ -1,4 +1,4 @@
-package data_product_ruleset_delete
+package dataproductrulesetdelete
 
 import (
 	"context"
@@ -13,7 +13,10 @@ import (
 var ut = testutils.TestUtils{}
 
 func TestFeatures(t *testing.T) {
-	ut.LoadConfig()
+	err := ut.LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
 		Options: &godog.Options{
@@ -37,7 +40,10 @@ func DeleteRulesetCommand(productName string, rulesetName string) error {
 		commandString += " " + rulesetName
 	}
 	commandString += " -s " + ut.Config.JetstreamURL
-	ut.ExecuteShell(commandString)
+	err := ut.ExecuteShell(commandString)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -66,7 +72,7 @@ func SearchRulesetByCLINotExists(dataProduct string, ruleset string) error {
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
-	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
+	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		ut.ClearDataProducts()
 		return ctx, nil
 	})
@@ -75,7 +81,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^已有 date product "'(.*?)'"$`, ut.CreateDataProduct)
 	ctx.Given(`^已有 data product 的 ruleset "'(.*?)'" "'(.*?)'"$`, ut.CreateDataProductRuleset)
 	ctx.When(`^刪除 "'(.*?)'" 的 ruleset "'(.*?)'"$`, DeleteRulesetCommand)
-	ctx.Then(`^刪除失敗$`, DeleteRulesetCommandFailed)
-	ctx.Then(`^刪除成功$`, DeleteRulesetCommandSuccess)
+	ctx.Then(`^Cli 回傳刪除失敗$`, DeleteRulesetCommandFailed)
+	ctx.Then(`^Cli 回傳刪除成功$`, DeleteRulesetCommandSuccess)
 	ctx.Then(`^使用 gravity-cli 查詢 "'(.*?)'" 的 "'(.*?)'" 不存在$`, SearchRulesetByCLINotExists)
 }
