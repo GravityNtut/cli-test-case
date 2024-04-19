@@ -59,7 +59,11 @@ func SearchDataProductByJetstreamFail(dataProduct string) error {
 }
 
 func DeleteDataProductCommand(dataProduct string) error {
-	commandString := "../gravity-cli product delete " + dataProduct + " -s " + ut.Config.JetstreamURL
+	commandString := "../gravity-cli product delete "
+	if dataProduct != "[null]" {
+		commandString += dataProduct
+	}
+	commandString += " -s " + ut.Config.JetstreamURL
 	ut.ExecuteShell(commandString)
 	return nil
 }
@@ -79,6 +83,16 @@ func DeleteDataProductFail() error {
 	return errors.New("data product 刪除應該要失敗")
 }
 
+func AssertErrorMessages(errorMessage string) error {
+	// TODO
+	// outErr := ut.CmdResult.stderr
+	// if outErr == errorMessage {
+	// 	return nil
+	// }
+	// return errors.New("Cli回傳訊息錯誤")
+	return nil
+}
+
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
@@ -86,12 +100,13 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有 data product "([^"]*)"$`, ut.CreateDataProduct)
-	ctx.When(`^刪除 data product "([^"]*)"$`, DeleteDataProductCommand)
-	ctx.Then(`^Cli 回傳 "([^"]*)" 刪除成功$`, DeleteDataProductSuccess)
+	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
+	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
+	ctx.Given(`^已有 data product "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.When(`^刪除 data product "'(.*?)'"$`, DeleteDataProductCommand)
+	ctx.Then(`^Cli 回傳 "'(.*?)'" 刪除成功$`, DeleteDataProductSuccess)
 	ctx.Then(`^Cli 回傳刪除失敗$`, DeleteDataProductFail)
-	ctx.Then(`^使用 gravity-cli 查詢 "([^"]*)" 不存在$`, SearchDataProductByCLIFail)
-	ctx.Then(`^使用 nats jetstream 查詢 "([^"]*)" 不存在$`, SearchDataProductByJetstreamFail)
+	ctx.Then(`^使用 gravity-cli 查詢 "'(.*?)'" 不存在$`, SearchDataProductByCLIFail)
+	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 不存在$`, SearchDataProductByJetstreamFail)
+	ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
 }

@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"test-case/testutils"
 	"testing"
@@ -69,7 +70,13 @@ func TestFeatures(t *testing.T) {
 func AddRulesetCommand(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string) error {
 	dataProduct = ut.ProcessString(dataProduct)
 	ruleset = ut.ProcessString(ruleset)
-	commandString := "../gravity-cli product ruleset add " + dataProduct + " " + ruleset
+	commandString := "../gravity-cli product ruleset add "
+	if dataProduct != "[null]" {
+		commandString += " " + dataProduct
+	}
+	if ruleset != "[null]" {
+		commandString += " " + ruleset
+	}
 	if event != "[ignore]" {
 		event := ut.ProcessString(event)
 		commandString += " --event " + event
@@ -83,18 +90,14 @@ func AddRulesetCommand(dataProduct string, ruleset string, method string, event 
 		commandString += " --pk " + pk
 	}
 	if desc != "[ignore]" {
-		if desc == "[null]" {
-			commandString += " --desc "
-		} else {
-			desc := ut.ProcessString(desc)
-			commandString += " --desc \"" + desc + "\""
-		}
+		desc := ut.ProcessString(desc)
+		commandString += " --desc " + desc
 	}
 	if handler != "[ignore]" {
-		commandString += " --handler ./assets/" + handler
+		commandString += " --handler " + handler
 	}
 	if schema != "[ignore]" {
-		commandString += " --schema ./assets/" + schema
+		commandString += " --schema " + schema
 	}
 	commandString += " --enabled -s " + ut.Config.JetstreamURL
 	ut.ExecuteShell(commandString)
@@ -139,16 +142,41 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 		fmt.Println("解碼 JSON 時出現錯誤:", err)
 		return err
 	}
-
 	ruleset = ut.ProcessString(ruleset)
+	//以下四個參數shell可以加上雙引號，因此這裡要進行移除
+	method = regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(method)[1]
+	event = regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(event)[1]
+	desc = regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(desc)[1]
+	pk = regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(pk)[1]
 	method = ut.ProcessString(method)
 	event = ut.ProcessString(event)
 	desc = ut.ProcessString(desc)
 	pk = ut.ProcessString(pk)
 
-	if ruleset != jsonData.Rules[ruleset].Name && method != jsonData.Rules[ruleset].Method && event != jsonData.Rules[ruleset].Event && desc != jsonData.Rules[ruleset].Desc {
-		return errors.New("NATS 查詢 ruleset 資訊不正確")
+	if ruleset != "[null]" {
+		if ruleset != jsonData.Rules[ruleset].Name {
+			return errors.New("NATS 查詢 ruleset 名稱不正確")
+		}
 	}
+
+	if method != "[ignore]" {
+		if method != jsonData.Rules[ruleset].Method {
+			return errors.New("NATS 查詢 ruleset method資訊不正確")
+		}
+	}
+
+	if event != "[ignore]" {
+		if event != jsonData.Rules[ruleset].Event {
+			return errors.New("NATS 查詢 ruleset event資訊不正確")
+		}
+	}
+
+	if desc != "[ignore]" {
+		if desc != jsonData.Rules[ruleset].Desc {
+			return errors.New("NATS 查詢 ruleset desc資訊不正確")
+		}
+	}
+
 
 	if pk != "[ignore]" {
 		expectedPK := strings.Join(jsonData.Rules[ruleset].PrimaryKey, ",")
@@ -158,25 +186,21 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 	}
 
 	if handler != "[ignore]" {
-		fileContent, err := os.ReadFile("./assets/" + handler)
+		regexHandler := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(handler)[1]
+		fileContent, err := os.ReadFile(regexHandler)
 		if err != nil {
 			return errors.New("NATS 查詢 handler.js 開啟失敗")
 		}
-		rulesetHandler, ok := jsonData.Rules[ruleset].Handler.(map[string]interface{})
-		if !ok {
-			return errors.New("NATS 查詢 handler 格式轉換失敗")
-		}
-		handlerScript, ok := rulesetHandler["script"].(string)
-		if !ok {
-			return errors.New("NATS 查詢 handler map 格式轉換失敗")
-		}
+		rulesetHandler := jsonData.Rules[ruleset].Handler.(map[string]interface{})
+		handlerScript := rulesetHandler["script"].(string)
 		if string(fileContent) != handlerScript {
 			return errors.New("NATS 查詢 ruleset handler.js 資訊不正確")
 		}
 	}
 
 	if schema != "[ignore]" {
-		fileContent, err := os.ReadFile("./assets/" + schema)
+		regexSchema := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(schema)[1]
+		fileContent, err := os.ReadFile(regexSchema)
 		if err != nil {
 			return errors.New("NATS 查詢 schema.json 開啟失敗")
 		}
@@ -210,12 +234,12 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
 
-	ctx.Given(`^已有data product "([^"]*)"$`, ut.CreateDataProduct)
+	ctx.Given(`^已有data product "'(.*?)'"$`, ut.CreateDataProduct)
 
-	ctx.When(`^"([^"]*)" 創建ruleset "([^"]*)" method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)"$`, AddRulesetCommand)
+	ctx.When(`^"'(.*?)'" 創建ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, AddRulesetCommand)
 	ctx.Then(`^ruleset 創建失敗$`, AddRulesetCommandFailed)
 	ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
-	ctx.Then(`^使用gravity-cli 查詢 "([^"]*)" 的 "([^"]*)" 存在$`, SearchRulesetByCLISuccess)
-	ctx.Then(`使用nats jetstream 查詢 "([^"]*)" 的 "([^"]*)" 存在，且參數 method "([^"]*)" event "([^"]*)" pk "([^"]*)" desc "([^"]*)" handler "([^"]*)" schema "([^"]*)" 正確$`, SearchRulesetByNatsSuccess)
-	ctx.Then(`^應有錯誤訊息 "([^"]*)"$`, AssertErrorMessages)
+	ctx.Then(`^使用gravity-cli 查詢 "'(.*?)'" 的 "'(.*?)'" 存在$`, SearchRulesetByCLISuccess)
+	ctx.Then(`使用nats jetstream 查詢 "'(.*?)'" 的 "'(.*?)'" 存在，且參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" 正確$`, SearchRulesetByNatsSuccess)
+	ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
 }

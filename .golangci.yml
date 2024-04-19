@@ -1,0 +1,40 @@
+# golangci-lint configuration options (1.49.0 and above)
+
+linters:
+  enable:
+    - errcheck
+    - goimports
+    - unused
+    - revive # replace golint
+    - ineffassign
+    - unused
+    - govet
+    - unconvert
+    - prealloc
+  disable-all: true
+
+issues:
+  # https://golangci-lint.run/usage/false-positives/
+  exclude:
+    - "package-comments: should have a package comment"
+    - "exported (type|const|var|type|method|function) (.+) should have comment"
+    # - "comment on exported type Service should be of the form (.+)"
+    # - 'exported: comment on exported type Service should be of the form "Service .*"'
+    - "exported: comment on exported type"
+
+  # Enable some lints excluded by default
+  exclude-use-default: false
+
+  # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
+  # max-per-linter: 0
+
+  # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
+  # max-same-issues: 0
+
+run:
+  exclude:
+    - ./vendor/*
+    - ./docs/*
+    - ./deployments/*
+    - ./*/assets/*
+    - ./tmp/*
