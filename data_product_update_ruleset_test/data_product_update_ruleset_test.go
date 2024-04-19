@@ -137,7 +137,7 @@ func UpdateRulesetCommandFailed() error {
 	return errors.New("ruleset 更改應該要失敗")
 }
 
-func ValidateRulesetUpdate(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string, enable string) error {
+func ValidateRulesetUpdate(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string, enabled string) error {
 	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
 	defer nc.Close()
 
@@ -208,6 +208,18 @@ func ValidateRulesetUpdate(dataProduct string, ruleset string, method string, ev
 		if fileSchema != string(natsSchema) {
 			return errors.New("schema更改失敗")
 		}
+	}
+
+	var enabledBool bool
+	if enabled == "[true]" {
+		enabledBool = true
+	} else if enabled == "[ignore]" {
+		enabledBool = false
+	} else {
+		return errors.New("不允許true或ignore以外的輸入")
+	}
+	if enabledBool != jsonData.Rules[ruleset].Enabled {
+		return errors.New("enabled更改失敗")
 	}
 	return nil
 }
