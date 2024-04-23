@@ -96,7 +96,7 @@ func AssertErrorMessages(errorMessage string) error {
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
-		ut.ClearDataProducts()
+		ut.RestartDocker()
 		return ctx, nil
 	})
 

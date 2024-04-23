@@ -88,7 +88,34 @@ func (testUtils *TestUtils) ClearDataProducts() {
 		log.Fatal(err)
 	}
 
-	js.PurgeStream("KV_GVT_default_PRODUCT")
+	streams := js.StreamNames()
+
+	re := regexp.MustCompile(`^GVT_default_DP_(.*)`)
+	for stringName := range streams {
+		parts := re.FindStringSubmatch(stringName)
+		if parts == nil {
+			continue
+		}
+		productName := parts[1]
+		cmd := exec.Command("../gravity-cli", "product", "delete", productName, "-s", testUtils.Config.JetstreamURL)
+		cmd.Run()
+	}
+}
+
+func (testUtils *TestUtils) RestartDocker() {
+	cmd := exec.Command("docker", "compose", "down")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err, stderr.String())
+	}
+	cmd = exec.Command("docker", "compose", "-f", "../docker-compose.yaml", "up", "-d")
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err, stderr.String())
+	}
 }
 
 func (testUtils *TestUtils) CheckNatsService() error {
