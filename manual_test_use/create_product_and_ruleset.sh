@@ -5,19 +5,19 @@
 ../gravity-cli product ruleset add drink drinkCreated \
     --enabled \
     --event=drinkCreated --method=create \
-    --schema="./assets/schema.json" \ 
+    --schema="./assets/schema.json" \
 	--pk=id
 
 ../gravity-cli product ruleset add drink drinkUpdate \
     --enabled \
     --event=drinkUpdate --method=update \
-    --schema="./assets/schema.json" \ 
+    --schema="./assets/schema.json" \
 	--pk=id
 	
 ../gravity-cli product ruleset add drink drinkCreated2 \
     --enabled \
     --event=drinkCreated --method=create \
-    --schema="./assets/schema.json" \ 
+    --schema="./assets/schema.json" \
 	--pk=name
 
 ../gravity-cli pub drinkCreated '{"id":1,"name":"test","price":100,"kcal":50}'

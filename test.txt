@@ -1,0 +1,127 @@
+Subscribing to product: drink
+Start Sequence: 1
+time="2024-04-24T16:28:10+08:00" level=info msg="Subscribing to subject" subject="$GVT.default.DP.drink.*.EVENT.>"
+{
+  "event": "drinkCreated",
+  "header": {
+    "Nats-Msg-Id": [
+      "1"
+    ]
+  },
+  "method": "INSERT",
+  "payload": {
+    "id": 1,
+    "kcal": 50,
+    "name": "test",
+    "price": 100
+  },
+  "primaryKey": null,
+  "product": "drink",
+  "seq": 1,
+  "subject": "$GVT.default.DP.drink.0.EVENT.drinkCreated",
+  "table": "drink",
+  "timestamp": "2024-04-24T16:02:31.643357973+08:00"
+}
+{
+  "event": "drinkCreated",
+  "header": {
+    "Nats-Msg-Id": [
+      "2"
+    ]
+  },
+  "method": "INSERT",
+  "payload": {
+    "id": 2,
+    "kcal": 10,
+    "name": "Hi",
+    "price": 200
+  },
+  "primaryKey": null,
+  "product": "drink",
+  "seq": 2,
+  "subject": "$GVT.default.DP.drink.0.EVENT.drinkCreated",
+  "table": "drink",
+  "timestamp": "2024-04-24T16:02:31.643709194+08:00"
+}
+{
+  "event": "drinkCreated",
+  "header": {
+    "Nats-Msg-Id": [
+      "4"
+    ]
+  },
+  "method": "INSERT",
+  "payload": {
+    "id": 4,
+    "kcal": 1000,
+    "name": "sa",
+    "price": 400
+  },
+  "primaryKey": null,
+  "product": "drink",
+  "seq": 3,
+  "subject": "$GVT.default.DP.drink.0.EVENT.drinkCreated",
+  "table": "drink",
+  "timestamp": "2024-04-24T16:02:31.64371383+08:00"
+}
+{
+  "event": "drinkCreated",
+  "header": {
+    "Nats-Msg-Id": [
+      "5"
+    ]
+  },
+  "method": "INSERT",
+  "payload": {
+    "id": 5,
+    "kcal": 600,
+    "name": "sssa",
+    "price": 500
+  },
+  "primaryKey": null,
+  "product": "drink",
+  "seq": 4,
+  "subject": "$GVT.default.DP.drink.0.EVENT.drinkCreated",
+  "table": "drink",
+  "timestamp": "2024-04-24T16:02:31.643716026+08:00"
+}
+{
+  "event": "drinkUpdate",
+  "header": {
+    "Nats-Msg-Id": [
+      "6"
+    ]
+  },
+  "method": "INSERT",
+  "payload": {
+    "id": 1,
+    "name": "test123"
+  },
+  "primaryKey": null,
+  "product": "drink",
+  "seq": 5,
+  "subject": "$GVT.default.DP.drink.0.EVENT.drinkUpdate",
+  "table": "drink",
+  "timestamp": "2024-04-24T16:02:31.643717612+08:00"
+}
+{
+  "event": "drinkCreated",
+  "header": {
+    "Nats-Msg-Id": [
+      "7"
+    ]
+  },
+  "method": "INSERT",
+  "payload": {
+    "id": 5,
+    "kcal": 600,
+    "name": "sssa",
+    "price": 500
+  },
+  "primaryKey": null,
+  "product": "drink",
+  "seq": 6,
+  "subject": "$GVT.default.DP.drink.0.EVENT.drinkCreated",
+  "table": "drink",
+  "timestamp": "2024-04-24T16:29:17.993461483+08:00"
+}
