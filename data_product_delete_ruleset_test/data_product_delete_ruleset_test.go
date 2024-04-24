@@ -33,10 +33,10 @@ func TestFeatures(t *testing.T) {
 
 func DeleteRulesetCommand(productName string, rulesetName string) error {
 	commandString := "../gravity-cli product ruleset delete "
-	if productName != "[null]" {
+	if productName != testutils.NullString {
 		commandString += " " + productName
 	}
-	if rulesetName != "[null]" {
+	if rulesetName != testutils.NullString {
 		commandString += " " + rulesetName
 	}
 	commandString += " -s " + ut.Config.JetstreamURL

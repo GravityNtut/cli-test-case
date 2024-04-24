@@ -3,18 +3,14 @@ package dataproductrulesetadd
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
-	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 	"test-case/testutils"
 	"testing"
 
 	"github.com/cucumber/godog"
-	"github.com/nats-io/nats.go"
 )
 
 type Rule struct {
@@ -74,32 +70,32 @@ func AddRulesetCommand(dataProduct string, ruleset string, method string, event 
 	dataProduct = ut.ProcessString(dataProduct)
 	ruleset = ut.ProcessString(ruleset)
 	commandString := "../gravity-cli product ruleset add "
-	if dataProduct != "[null]" {
+	if dataProduct != testutils.NullString {
 		commandString += " " + dataProduct
 	}
-	if ruleset != "[null]" {
+	if ruleset != testutils.NullString {
 		commandString += " " + ruleset
 	}
-	if event != "[ignore]" {
+	if event != testutils.IgnoreString {
 		event := ut.ProcessString(event)
 		commandString += " --event " + event
 	}
-	if method != "[ignore]" {
+	if method != testutils.IgnoreString {
 		method := ut.ProcessString(method)
 		commandString += " --method " + method
 	}
-	if pk != "[ignore]" {
+	if pk != testutils.IgnoreString {
 		pk := ut.ProcessString(pk)
 		commandString += " --pk " + pk
 	}
-	if desc != "[ignore]" {
+	if desc != testutils.IgnoreString {
 		desc := ut.ProcessString(desc)
 		commandString += " --desc " + desc
 	}
-	if handler != "[ignore]" {
+	if handler != testutils.IgnoreString {
 		commandString += " --handler " + handler
 	}
-	if schema != "[ignore]" {
+	if schema != testutils.IgnoreString {
 		commandString += " --schema " + schema
 	}
 	commandString += " --enabled -s " + ut.Config.JetstreamURL
@@ -133,7 +129,7 @@ func SearchRulesetByCLISuccess(dataProduct string, ruleset string) error {
 }
 
 func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string) error {
-	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
+	nc, _ := ut.ConnectToNats()
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -149,88 +145,47 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 		return err
 	}
 	ruleset = ut.ProcessString(ruleset)
-	//以下四個參數shell可以加上雙引號，因此這裡要進行移除
-	method = regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(method)[1]
-	event = regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(event)[1]
-	desc = regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(desc)[1]
-	pk = regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(pk)[1]
 	method = ut.ProcessString(method)
 	event = ut.ProcessString(event)
 	desc = ut.ProcessString(desc)
 	pk = ut.ProcessString(pk)
 
-	if ruleset != "[null]" {
-		if ruleset != jsonData.Rules[ruleset].Name {
-			return errors.New("NATS 查詢 ruleset 名稱不正確")
-		}
+	if err := ut.ValidateField(jsonData.Rules[ruleset].Name, ruleset); err != nil {
+		return err
 	}
 
-	if method != "[ignore]" {
-		if method != jsonData.Rules[ruleset].Method {
-			return errors.New("NATS 查詢 ruleset method資訊不正確")
-		}
+	if err := ut.ValidateField(jsonData.Rules[ruleset].Method, method); err != nil {
+		return err
 	}
 
-	if event != "[ignore]" {
-		if event != jsonData.Rules[ruleset].Event {
-			return errors.New("NATS 查詢 ruleset event資訊不正確")
-		}
+	if err := ut.ValidateField(jsonData.Rules[ruleset].Event, event); err != nil {
+		return err
 	}
 
-	if desc != "[ignore]" {
-		if desc != jsonData.Rules[ruleset].Desc {
-			return errors.New("NATS 查詢 ruleset desc資訊不正確")
-		}
+	if err := ut.ValidateField(jsonData.Rules[ruleset].Desc, desc); err != nil {
+		return err
 	}
 
-	if pk != "[ignore]" {
-		expectedPK := strings.Join(jsonData.Rules[ruleset].PrimaryKey, ",")
-		if pk != expectedPK {
-			return errors.New("NATS 查詢 ruleset PK資訊不正確")
-		}
+	if err := ut.ValidateField(strings.Join(jsonData.Rules[ruleset].PrimaryKey, ","), pk); err != nil {
+		return err
 	}
 
-	if handler != "[ignore]" {
-		regexHandler := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(handler)[1]
-		fileContent, err := os.ReadFile(regexHandler)
-		if err != nil {
-			return errors.New("NATS 查詢 handler.js 開啟失敗")
-		}
-		rulesetHandler := jsonData.Rules[ruleset].Handler.(map[string]interface{})
-		handlerScript := rulesetHandler["script"].(string)
-		if string(fileContent) != handlerScript {
-			return errors.New("NATS 查詢 ruleset handler.js 資訊不正確")
-		}
+	if err := ut.ValidateHandler(jsonData.Rules[ruleset].Handler, handler); err != nil {
+		return err
 	}
 
-	if schema != "[ignore]" {
-		regexSchema := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(schema)[1]
-		fileContent, err := os.ReadFile(regexSchema)
-		if err != nil {
-			return errors.New("NATS 查詢 schema.json 開啟失敗")
-		}
-		natsSchema, _ := json.Marshal(jsonData.Rules[ruleset].Schema)
-		var fileJSON interface{}
-		err = json.Unmarshal(fileContent, &fileJSON)
-		if err != nil {
-			return errors.New("使用nats驗證時 schema.json 解碼失敗")
-		}
-		fileSchemaByte, _ := json.Marshal(fileJSON)
-		fileSchema := strings.Join(strings.Fields(string(fileSchemaByte)), "")
-		if fileSchema != string(natsSchema) {
-			return errors.New("NATS 查詢 ruleset schema.json 資訊不正確")
-		}
+	if err := ut.ValidateSchema(jsonData.Rules[ruleset].Schema, schema); err != nil {
+		return err
 	}
 	return nil
 }
 
 // func AssertErrorMessages(expected string) error {
-// 	Todo
 // 	if cmdResult.Stderr == expected {
 // 		return nil
 // 	}
+// TODO
 // 	return fmt.Errorf("應有錯誤訊息: %s", expected)
-// 	return nil
 // }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {

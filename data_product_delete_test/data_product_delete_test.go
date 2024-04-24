@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/cucumber/godog"
-	"github.com/nats-io/nats.go"
 )
 
 var ut = testutils.TestUtils{}
@@ -43,7 +42,7 @@ func SearchDataProductByCLIFail(dataProduct string) error {
 }
 
 func SearchDataProductByJetstreamFail(dataProduct string) error {
-	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
+	nc, _ := ut.ConnectToNats()
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -63,7 +62,7 @@ func SearchDataProductByJetstreamFail(dataProduct string) error {
 
 func DeleteDataProductCommand(dataProduct string) error {
 	commandString := "../gravity-cli product delete "
-	if dataProduct != "[null]" {
+	if dataProduct != testutils.NullString {
 		commandString += dataProduct
 	}
 	commandString += " -s " + ut.Config.JetstreamURL
@@ -89,6 +88,7 @@ func DeleteDataProductFail() error {
 	return errors.New("data product 刪除應該要失敗")
 }
 
+// TODO
 // func AssertErrorMessages(errorMessage string) error {
 // 	outErr := ut.CmdResult.Stderr
 // 	if outErr == errorMessage {

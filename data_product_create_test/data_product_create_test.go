@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/cucumber/godog"
-	"github.com/nats-io/nats.go"
 )
 
 var ut = testutils.TestUtils{}
@@ -36,15 +35,15 @@ func TestFeatures(t *testing.T) {
 func CreateDataProductCommand(dataProduct string, description string, schema string) error {
 	dataProduct = ut.ProcessString(dataProduct)
 	commandString := "../gravity-cli product create "
-	if dataProduct != "[null]" {
+	if dataProduct != testutils.NullString {
 		commandString += dataProduct
 	}
-	if description != "[ignore]" {
+	if description != testutils.IgnoreString {
 		description := ut.ProcessString(description)
 		commandString += " --desc " + description
 	}
 
-	if schema != "[ignore]" {
+	if schema != testutils.IgnoreString {
 		commandString += " --schema " + schema
 	}
 	commandString += " --enabled" + " -s " + ut.Config.JetstreamURL
@@ -80,7 +79,7 @@ func SearchDataProductByCLISuccess(dataProduct string) error {
 
 func SearchDataProductByJetstreamSuccess(dataProduct string) error {
 	dataProduct = ut.ProcessString(dataProduct)
-	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
+	nc, _ := ut.ConnectToNats()
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -98,8 +97,8 @@ func SearchDataProductByJetstreamSuccess(dataProduct string) error {
 	return errors.New("jetstream裡未創建成功")
 }
 
+// TODO
 // func AssertErrorMessages(errorMessage string) error {
-//	TODO
 // 	return nil
 // }
 

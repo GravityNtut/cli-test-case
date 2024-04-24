@@ -6,14 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
-	"regexp"
 	"strings"
 	"test-case/testutils"
 	"testing"
 
 	"github.com/cucumber/godog"
-	"github.com/nats-io/nats.go"
 )
 
 type Rule struct {
@@ -60,7 +57,7 @@ func TestFeatures(t *testing.T) {
 }
 
 func SaveRuleset(dataProduct string, ruleset string) error {
-	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
+	nc, _ := ut.ConnectToNats()
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -71,7 +68,7 @@ func SaveRuleset(dataProduct string, ruleset string) error {
 	kv, _ := js.KeyValue("GVT_default_PRODUCT")
 	entry, _ := kv.Get(dataProduct)
 
-	var originJSON JSONData 
+	var originJSON JSONData
 	err = json.Unmarshal(entry.Value(), &originJSON)
 	if err != nil {
 		log.Fatal(err)
@@ -84,35 +81,35 @@ func SaveRuleset(dataProduct string, ruleset string) error {
 
 func UpdateRulesetCommand(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string, enabled string) error {
 	commandString := "../gravity-cli product ruleset update "
-	if dataProduct != "[null]" {
+	if dataProduct != testutils.NullString {
 		commandString += " " + dataProduct
 	}
-	if ruleset != "[null]" {
+	if ruleset != testutils.NullString {
 		commandString += " " + ruleset
 	}
-	if method != "[ignore]" {
+	if method != testutils.IgnoreString {
 		commandString += " --method " + method
 	}
-	if event != "[ignore]" {
+	if event != testutils.IgnoreString {
 		commandString += " --event " + event
 	}
-	if pk != "[ignore]" {
+	if pk != testutils.IgnoreString {
 		commandString += " --pk " + pk
 	}
-	if desc != "[ignore]" {
+	if desc != testutils.IgnoreString {
 		commandString += " --desc " + desc
 	}
-	if enabled != "[ignore]" {
-		if enabled == "[true]" {
+	if enabled != testutils.IgnoreString {
+		if enabled == testutils.TrueString {
 			commandString += " --enabled"
 		} else {
 			return errors.New("enabled不允許true或ignore以外的值")
 		}
 	}
-	if handler != "[ignore]" {
+	if handler != testutils.IgnoreString {
 		commandString += " --handler " + handler
 	}
-	if schema != "[ignore]" {
+	if schema != testutils.IgnoreString {
 		commandString += " --schema " + schema
 	}
 	commandString += " -s " + ut.Config.JetstreamURL
@@ -138,7 +135,7 @@ func UpdateRulesetCommandFailed() error {
 }
 
 func ValidateRulesetUpdate(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string, enabled string) error {
-	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
+	nc, _ := ut.ConnectToNats()
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -154,78 +151,35 @@ func ValidateRulesetUpdate(dataProduct string, ruleset string, method string, ev
 		return err
 	}
 
-	if method != "[ignore]" {
-		regexMethod := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(method)[1]
-		if jsonData.Rules[ruleset].Method != regexMethod {
-			return errors.New("method更改失敗")
-		}
+	if err := ut.ValidateField(jsonData.Rules[ruleset].Method, method); err != nil {
+		return err
 	}
-	if event != "[ignore]" {
-		regexEvent := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(event)[1]
-		if jsonData.Rules[ruleset].Event != regexEvent {
-			return errors.New("event更改失敗")
-		}
+	if err := ut.ValidateField(jsonData.Rules[ruleset].Event, event); err != nil {
+		return err
 	}
-	if desc != "[ignore]" {
-		regexDesc := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(desc)[1]
-		if jsonData.Rules[ruleset].Desc != regexDesc {
-			return errors.New("desc更改失敗")
-		}
+	if err := ut.ValidateField(jsonData.Rules[ruleset].Desc, desc); err != nil {
+		return err
 	}
-	if pk != "[ignore]" {
-		regexPk := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(pk)[1]
-		expectedPK := strings.Join(jsonData.Rules[ruleset].PrimaryKey, ",")
-		if expectedPK != regexPk {
-			return errors.New("pk更改失敗")
-		}
-	}
-	if handler != "[ignore]" {
-		regexHandler := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(handler)[1]
-		fileContent, err := os.ReadFile(regexHandler)
-		if err != nil {
-			return errors.New("使用nats驗證時 handler.js 開啟失敗")
-		}
-		rulesetHandler := jsonData.Rules[ruleset].Handler.(map[string]interface{})
-		handlerScript := rulesetHandler["script"].(string)
-		if string(fileContent) != handlerScript {
-			return errors.New("handler更改失敗")
-		}
-	}
-	if schema != "[ignore]" {
-		regexSchema := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(schema)[1]
-		fileContent, err := os.ReadFile(regexSchema)
-		if err != nil {
-			return errors.New("使用nats驗證時 schema.json 開啟失敗")
-		}
-		natsSchema, _ := json.Marshal(jsonData.Rules[ruleset].Schema)
-		var fileJSON interface{}
-		err = json.Unmarshal(fileContent, &fileJSON)
-		if err != nil {
-			return errors.New("使用nats驗證時 schema.json 解碼失敗")
-		}
-		fileSchemaByte, _ := json.Marshal(fileJSON)
-		fileSchema := strings.Join(strings.Fields(string(fileSchemaByte)), "")
-		if fileSchema != string(natsSchema) {
-			return errors.New("schema更改失敗")
-		}
+	if err := ut.ValidateField(strings.Join(jsonData.Rules[ruleset].PrimaryKey, ","), pk); err != nil {
+		return err
 	}
 
-	var enabledBool bool
-	if enabled == "[true]" {
-		enabledBool = true
-	} else if enabled == "[ignore]" {
-		enabledBool = false
-	} else {
-		return errors.New("不允許true或ignore以外的輸入")
+	if err := ut.ValidateHandler(jsonData.Rules[ruleset].Handler, handler); err != nil {
+		return err
 	}
-	if enabledBool != jsonData.Rules[ruleset].Enabled {
-		return errors.New("enabled更改失敗")
+
+	if err := ut.ValidateSchema(jsonData.Rules[ruleset].Schema, schema); err != nil {
+		return err
+	}
+
+	if err := ut.ValidateEnabled(jsonData.Rules[ruleset].Enabled, enabled); err != nil {
+		return err
 	}
 	return nil
 }
 
 func ValidateRulesetNotChange(dataProduct string, ruleset string) error {
-	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
+	nc, _ := ut.ConnectToNats()
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -248,9 +202,9 @@ func ValidateRulesetNotChange(dataProduct string, ruleset string) error {
 	return nil
 }
 
+// TODO
 // func AssertErrorMessages(expected string) error {
-// 	Todo
-// 	return nil
+// return nil
 // }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {

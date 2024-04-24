@@ -5,11 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -31,6 +33,13 @@ type Config struct {
 	JetstreamURL  string `json:"jetstream_url"`
 	StopOnFailure bool   `json:"stop_on_failure"`
 }
+
+const (
+	NullString   = "[null]"
+	IgnoreString = "[ignore]"
+	TrueString   = "[true]"
+	FalseString  = "[false]"
+)
 
 func (testUtils *TestUtils) LoadConfig() error {
 	str, err := os.ReadFile("../config/config.json")
@@ -71,7 +80,7 @@ func (testUtils *TestUtils) ExecuteShell(command string) error {
 
 	cmdResultTmp.Stdout = stdout.String()
 	cmdResultTmp.Stderr = stderr.String()
-	return nil 
+	return nil
 }
 
 func (testUtils *TestUtils) ProcessString(str string) string {
@@ -90,15 +99,84 @@ func (testUtils *TestUtils) ProcessString(str string) string {
 	return completeString
 }
 
+func (testUtils *TestUtils) ValidateField(actual, expected string) error {
+	if expected != IgnoreString {
+		regex := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(expected)[1] //移除雙引號
+		if actual != regex {
+			return fmt.Errorf("%s 與nats資訊不符", expected)
+		}
+	}
+	return nil
+}
+
+func (testUtils *TestUtils) ValidateEnabled(actual bool, expected string) error {
+	var enabledBool bool
+	if expected == TrueString {
+		enabledBool = true
+	} else if expected == IgnoreString || expected == FalseString {
+		enabledBool = false
+	} else {
+		return errors.New("不允許true,false,ignore以外的輸入")
+	}
+	if enabledBool != actual {
+		return errors.New("enabled更改失敗")
+
+	}
+	return nil
+}
+
+func (testUtils *TestUtils) ValidateHandler(actual interface{}, expected string) error {
+	if expected != IgnoreString {
+		regexHandler := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(expected)[1]
+		fileContent, err := os.ReadFile(regexHandler)
+		if err != nil {
+			return err
+		}
+		rulesetHandler := actual.(map[string]interface{})
+		handlerScript := rulesetHandler["script"].(string)
+		if string(fileContent) != handlerScript {
+			return errors.New("handler與nats資訊不符")
+		}
+	}
+	return nil
+}
+
+func (testUtils *TestUtils) ValidateSchema(actual interface{}, expected string) error {
+	if expected != IgnoreString {
+		regexSchema := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(expected)[1]
+		fileContent, err := os.ReadFile(regexSchema)
+		if err != nil {
+			return err
+		}
+		natsSchema, _ := json.Marshal(actual)
+		var fileJSON interface{}
+		err = json.Unmarshal(fileContent, &fileJSON)
+		if err != nil {
+			return err
+		}
+		fileSchemaByte, _ := json.Marshal(fileJSON)
+		fileSchema := strings.Join(strings.Fields(string(fileSchemaByte)), "")
+		if fileSchema != string(natsSchema) {
+			return errors.New("schema與nats資訊")
+		}
+	}
+	return nil
+}
+
+func (testUtils *TestUtils) ConnectToNats() (*nats.Conn, error) {
+	nc, err := nats.Connect("nats://" + testUtils.Config.JetstreamURL)
+	return nc, err
+
+}
+
 func (testUtils *TestUtils) ClearDataProducts() {
-	nc, _ := nats.Connect("nats://" + testUtils.Config.JetstreamURL)
+	nc, _ := testUtils.ConnectToNats()
 	defer nc.Close()
 
 	js, err := nc.JetStream()
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	err = js.PurgeStream("KV_GVT_default_PRODUCT")
 	if err != nil {
 		log.Fatal(err)
@@ -106,7 +184,7 @@ func (testUtils *TestUtils) ClearDataProducts() {
 }
 
 func (testUtils *TestUtils) CheckNatsService() error {
-	nc, err := nats.Connect("nats://" + testUtils.Config.JetstreamURL)
+	nc, err := testUtils.ConnectToNats()
 	if err != nil {
 		return err
 	}
