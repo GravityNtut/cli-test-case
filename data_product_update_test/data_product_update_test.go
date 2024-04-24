@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/cucumber/godog"
+	"github.com/nats-io/nats.go"
 )
 
 type JSONData struct {
@@ -78,7 +79,7 @@ func UpdateDataProductCommandFail() error {
 }
 
 func SearchDataProductByJetstreamSuccess(dataProduct string) error {
-	nc, _ := ut.ConnectToNats()
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -105,7 +106,7 @@ func SearchDataProductByJetstreamSuccess(dataProduct string) error {
 // }
 
 func DataProductNotChanges(dataProduct string) error {
-	nc, _ := ut.ConnectToNats()
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -123,7 +124,7 @@ func DataProductNotChanges(dataProduct string) error {
 }
 
 func DataProductUpdateSuccess(dataProduct string, desc string, schema string, enabled string) error {
-	nc, _ := ut.ConnectToNats()
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -165,7 +166,7 @@ func UpdateDataProductCommandSuccess() error {
 }
 
 func StoreNowDataProduct(dataProduct string) error {
-	nc, _ := ut.ConnectToNats()
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()

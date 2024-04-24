@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/cucumber/godog"
+	"github.com/nats-io/nats.go"
 )
 
 var ut = testutils.TestUtils{}
@@ -79,7 +80,7 @@ func SearchDataProductByCLISuccess(dataProduct string) error {
 
 func SearchDataProductByJetstreamSuccess(dataProduct string) error {
 	dataProduct = ut.ProcessString(dataProduct)
-	nc, _ := ut.ConnectToNats()
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()

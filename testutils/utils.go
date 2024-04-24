@@ -31,7 +31,7 @@ type CommandResult struct {
 
 type Config struct {
 	JetstreamURL  string `json:"jetstream_url"`
-	StopOnFailure bool   `json:"stop_on_failure"`
+	StopOnFailure bool   `json:"stop_on_failure"` 
 }
 
 const (
@@ -39,6 +39,7 @@ const (
 	IgnoreString = "[ignore]"
 	TrueString   = "[true]"
 	FalseString  = "[false]"
+	NatsProtocol = "nats://" 
 )
 
 func (testUtils *TestUtils) LoadConfig() error {
@@ -163,14 +164,8 @@ func (testUtils *TestUtils) ValidateSchema(actual interface{}, expected string) 
 	return nil
 }
 
-func (testUtils *TestUtils) ConnectToNats() (*nats.Conn, error) {
-	nc, err := nats.Connect("nats://" + testUtils.Config.JetstreamURL)
-	return nc, err
-
-}
-
 func (testUtils *TestUtils) ClearDataProducts() {
-	nc, _ := testUtils.ConnectToNats()
+	nc, _ := nats.Connect(NatsProtocol + testUtils.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -184,7 +179,7 @@ func (testUtils *TestUtils) ClearDataProducts() {
 }
 
 func (testUtils *TestUtils) CheckNatsService() error {
-	nc, err := testUtils.ConnectToNats()
+	nc, err := nats.Connect(NatsProtocol + testUtils.Config.JetstreamURL)
 	if err != nil {
 		return err
 	}

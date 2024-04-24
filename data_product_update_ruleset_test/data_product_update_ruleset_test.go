@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/cucumber/godog"
+	"github.com/nats-io/nats.go"
 )
 
 type Rule struct {
@@ -57,7 +58,7 @@ func TestFeatures(t *testing.T) {
 }
 
 func SaveRuleset(dataProduct string, ruleset string) error {
-	nc, _ := ut.ConnectToNats()
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -135,7 +136,7 @@ func UpdateRulesetCommandFailed() error {
 }
 
 func ValidateRulesetUpdate(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string, enabled string) error {
-	nc, _ := ut.ConnectToNats()
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -160,7 +161,8 @@ func ValidateRulesetUpdate(dataProduct string, ruleset string, method string, ev
 	if err := ut.ValidateField(jsonData.Rules[ruleset].Desc, desc); err != nil {
 		return err
 	}
-	if err := ut.ValidateField(strings.Join(jsonData.Rules[ruleset].PrimaryKey, ","), pk); err != nil {
+	pkStr := strings.Join(jsonData.Rules[ruleset].PrimaryKey, ",")
+	if err := ut.ValidateField(pkStr, pk); err != nil {
 		return err
 	}
 
@@ -179,7 +181,7 @@ func ValidateRulesetUpdate(dataProduct string, ruleset string, method string, ev
 }
 
 func ValidateRulesetNotChange(dataProduct string, ruleset string) error {
-	nc, _ := ut.ConnectToNats()
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
