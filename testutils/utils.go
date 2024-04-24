@@ -31,7 +31,7 @@ type CommandResult struct {
 
 type Config struct {
 	JetstreamURL  string `json:"jetstream_url"`
-	StopOnFailure bool   `json:"stop_on_failure"` 
+	StopOnFailure bool   `json:"stop_on_failure"`
 }
 
 const (
@@ -39,7 +39,7 @@ const (
 	IgnoreString = "[ignore]"
 	TrueString   = "[true]"
 	FalseString  = "[false]"
-	NatsProtocol = "nats://" 
+	NatsProtocol = "nats://"
 )
 
 func (testUtils *TestUtils) LoadConfig() error {
@@ -120,7 +120,7 @@ func (testUtils *TestUtils) ValidateEnabled(actual bool, expected string) error 
 		return errors.New("不允許true,false,ignore以外的輸入")
 	}
 	if enabledBool != actual {
-		return errors.New("enabled更改失敗")
+		return errors.New("enabled 更改失敗")
 
 	}
 	return nil
