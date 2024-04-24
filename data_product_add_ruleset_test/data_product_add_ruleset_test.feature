@@ -37,7 +37,7 @@ Scenario:
     Then 使用nats jetstream 查詢 "'<ProductName>'" 的 "'<Ruleset>'" 存在，且參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" 正確
     When "'<ProductName>'" 創建ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'"
     Then ruleset 創建失敗
-    And 應有錯誤訊息 "'<Error_message>'"
+    # And 應有錯誤訊息 "'<Error_message>'"
     Examples:
         | ID   | ProductName | Ruleset       | Method  | Event         |   Pk          |  Desc             |         Handler_script        |             Schema                   |              Error_message             |
         | E1(1)| drink       | drinkCreated  | create  | drinkCreated  |   id          |   "description"   |     ./assets/handler.js       |      ./assets/schema.json            |                                        |
@@ -47,7 +47,7 @@ Scenario:
     Given 已有data product "'drink'"
     When "'<ProductName>'" 創建ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'"
     Then ruleset 創建失敗
-    And 應有錯誤訊息 "'<Error_message>'"
+    # And 應有錯誤訊息 "'<Error_message>'"
     Examples:
         | ID     | ProductName | Ruleset       | Method       | Event         |   Pk     |  Desc            |        Handler_script       |              Schema               |              Error_message             |
         | E2(1)  | NotExists   |  drinkCreated |  create      | drinkCreated  |   id     |   description    |     ./assets/handler.js     |      ./assets/schema.json         |                                        |

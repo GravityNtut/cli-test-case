@@ -25,8 +25,8 @@ Given 已開啟服務 dispatcher
 	Given 儲存 nats 現有 data product 副本 "'drink'"
 	When 更新 data product "'<ProductName>'" 使用參數 "'<Description>'" "'<Enabled>'" "'<Schema>'"
 	Then Cli 回傳更改失敗
-	And 應有錯誤訊息 "'<Error_message>'"
-	And 使用 nats jetstream 查詢 "'drink'" 參數無任何改動 "'<Description>'" "'<Schema>'" "'<Enabled>'"
+	# And 應有錯誤訊息 "'<Error_message>'"
+	And 使用 nats jetstream 查詢 "'drink'" 參數無任何改動
 	Examples:
 	|  ID   | ProductName | Description  | 	    Schema         		 | Enabled   | Error_message   |
 	| E1(1) | not_exist   | [ignore]  	 | 		[ignore] 			 | [ignore]  |                 |

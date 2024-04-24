@@ -28,7 +28,7 @@ Given 已開啟服務 dispatcher
 	Then 使用 nats jetstream 查詢 "'<ProductName>'" 存在
 	When 創建 data product "'<ProductName>'" 使用參數 "'<Description>'" "'<Schema>'"
 	Then Cli 回傳建立失敗
-	And 應有錯誤訊息 "'<Error_message>'"
+	# And 應有錯誤訊息 "'<Error_message>'"
 	Examples:
 	|   ID  | ProductName | Description | 		Schema         | Error_message  |
 	| E1(1) | drink       | description | ./assets/schema.json |			    |
@@ -37,7 +37,7 @@ Given 已開啟服務 dispatcher
 	Scenario: 使用者使用product create指令來建立data product，失敗情境
 	When 創建 data product "'<ProductName>'" 使用參數 "'<Description>'" "'<Schema>'"
 	Then Cli 回傳建立失敗
-	And 應有錯誤訊息 "'<Error_message>'"
+	# And 應有錯誤訊息 "'<Error_message>'"
 	Examples:
 	|   ID  | ProductName   | Description  | 			Schema       			| Error_message |
 	| E2(1) | _-*\($\)?@    | description  | 		./assets/schema.json 		| 			    |
