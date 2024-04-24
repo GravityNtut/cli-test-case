@@ -1,4 +1,4 @@
-package data_product_update
+package dataproductupdate
 
 import (
 	"context"
@@ -6,9 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
-	"regexp"
-	"strings"
 	"test-case/testutils"
 	"testing"
 
@@ -16,19 +13,22 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-type JsonData struct {
+type JSONData struct {
 	Name    string      `json:"name"`
 	Desc    string      `json:"desc"`
 	Enabled bool        `json:"enabled"`
 	Schema  interface{} `json:"schema"`
 }
 
-var newJsonData JsonData
+var newJSONData JSONData
 var ut testutils.TestUtils
-var originJsonData string
+var originJSONData string
 
 func TestFeatures(t *testing.T) {
-	ut.LoadConfig()
+	err := ut.LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
 		Options: &godog.Options{
@@ -45,27 +45,29 @@ func TestFeatures(t *testing.T) {
 
 func UpdateDataProductCommand(dataProduct string, description string, enable string, schema string) error {
 	commandString := "../gravity-cli product update "
-	if dataProduct != "[null]" {
+	if dataProduct != testutils.NullString {
 		commandString += dataProduct
 	}
-	if description != "[ignore]" {
+	if description != testutils.IgnoreString {
 		commandString += " --desc " + description
 	}
 
-	if enable != "[ignore]" {
-		if enable == "[true]" {
+	if enable != testutils.IgnoreString {
+		if enable == testutils.TrueString {
 			commandString += " --enabled"
 		} else {
 			return errors.New("不允許true或ignore以外的輸入")
 		}
 	}
 
-	if schema != "[ignore]" {
+	if schema != testutils.IgnoreString {
 		commandString += " --schema " + schema
 	}
 	commandString += " -s " + ut.Config.JetstreamURL
-	ut.ExecuteShell(commandString)
-
+	err := ut.ExecuteShell(commandString)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -77,7 +79,7 @@ func UpdateDataProductCommandFail() error {
 }
 
 func SearchDataProductByJetstreamSuccess(dataProduct string) error {
-	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -95,18 +97,16 @@ func SearchDataProductByJetstreamSuccess(dataProduct string) error {
 	return errors.New("jetstream裡未創建成功")
 }
 
-func AssertErrorMessages(errorMessage string) error {
-	// TODO
-	// outErr := cmdResult.stderr
-	// if outErr == errorMessage {
-	// 	return nil
-	// }
-	// return errors.New("Cli回傳訊息錯誤")
-	return nil
-}
+// func AssertErrorMessages(errorMessage string) error {
+// 	outErr := cmdResult.stderr
+// 	if outErr == errorMessage {
+// 		return nil
+// 	}
+// 	return errors.New("Cli回傳訊息錯誤")
+// }
 
-func DataProductNotChanges(dataProduct string, description string, schema string, enabled string) error {
-	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
+func DataProductNotChanges(dataProduct string) error {
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -117,14 +117,14 @@ func DataProductNotChanges(dataProduct string, description string, schema string
 	kv, _ := js.KeyValue("GVT_default_PRODUCT")
 	entry, _ := kv.Get(dataProduct)
 
-	if string(entry.Value()) == originJsonData {
+	if string(entry.Value()) == originJSONData {
 		return nil
 	}
 	return errors.New("與原始資料不符")
 }
 
-func DataProductUpdateSuccess(dataProduct string, description string, schema string, enabled string) error {
-	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
+func DataProductUpdateSuccess(dataProduct string, desc string, schema string, enabled string) error {
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -134,48 +134,28 @@ func DataProductUpdateSuccess(dataProduct string, description string, schema str
 
 	kv, _ := js.KeyValue("GVT_default_PRODUCT")
 	entry, _ := kv.Get(dataProduct)
-	err = json.Unmarshal((entry.Value()), &newJsonData)
+	err = json.Unmarshal((entry.Value()), &newJSONData)
 	if err != nil {
 		fmt.Println("解碼 JSON 時出現錯誤:", err)
 		return err
 	}
 
-	if schema != "[ignore]" {
-		regexSchema := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(schema)[1]
-		fileContent, err := os.ReadFile(regexSchema)
-		if err != nil {
-			return errors.New("使用nats驗證時 schema.json 開啟失敗")
-		}
-		schemaString, _ := json.Marshal(newJsonData.Schema)
-		var jsonInterface interface{}
-		json.Unmarshal(fileContent, &jsonInterface)
-		fileSchemaByte, _ := json.Marshal(jsonInterface)
-		fileSchema := strings.Join(strings.Fields(string(fileSchemaByte)), "")
-		if fileSchema != string(schemaString) {
-			return errors.New("schema內容不同")
-		}
+	if err := ut.ValidateSchema(newJSONData.Schema, schema); err != nil {
+		return err
 	}
 
-	var enabledBool bool
-	if enabled == "[true]" {
-		enabledBool = true
-	} else if enabled == "[ignore]" {
-		enabledBool = false
-	} else {
-		return errors.New("不允許true或ignore以外的輸入")
+	if err := ut.ValidateEnabled(newJSONData.Enabled, enabled); err != nil {
+		return err
 	}
 
-	if description != "[ignore]" {
-		regexDesc := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(description)[1]
-		if regexDesc != newJsonData.Desc {
-			return errors.New("description內容不同")
-		}
+	if err := ut.ValidateField(newJSONData.Desc, desc); err != nil {
+		return err
 	}
 
-	if dataProduct == newJsonData.Name && enabledBool == newJsonData.Enabled {
-		return nil
+	if dataProduct != newJSONData.Name {
+		return errors.New("資料更新失敗")
 	}
-	return errors.New("資料更新失敗")
+	return nil
 }
 
 func UpdateDataProductCommandSuccess() error {
@@ -186,7 +166,7 @@ func UpdateDataProductCommandSuccess() error {
 }
 
 func StoreNowDataProduct(dataProduct string) error {
-	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -196,12 +176,15 @@ func StoreNowDataProduct(dataProduct string) error {
 
 	kv, _ := js.KeyValue("GVT_default_PRODUCT")
 	entry, _ := kv.Get(dataProduct)
-	originJsonData = string(entry.Value())
+	originJSONData = string(entry.Value())
 	return nil
 }
 
+// TODO
+// func AssertErrorMessages(errorMessage string) error {
+
 func InitializeScenario(ctx *godog.ScenarioContext) {
-	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
+	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		ut.ClearDataProducts()
 		return ctx, nil
 	})
@@ -213,7 +196,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.When(`^更新 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, UpdateDataProductCommand)
 	ctx.Then(`^Cli 回傳更改成功$`, UpdateDataProductCommandSuccess)
 	ctx.Then(`^Cli 回傳更改失敗$`, UpdateDataProductCommandFail)
-	ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
+	// ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
 	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 參數更改成功 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, DataProductUpdateSuccess)
-	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 參數無任何改動 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, DataProductNotChanges)
+	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 參數無任何改動$`, DataProductNotChanges)
 }

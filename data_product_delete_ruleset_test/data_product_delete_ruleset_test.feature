@@ -21,7 +21,7 @@ Scenario:
     Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'"
     When 刪除 "'<ProductName>'" 的 ruleset "'<RulesetName>'"
     Then Cli 回傳刪除失敗
-	And 應有錯誤訊息 "'<Error_message>'"
+	# And 應有錯誤訊息 "'<Error_message>'"
     Examples:
         |  ID  | ProductName  | RulesetName  | Error_message |
         | E1(1)| drink        | NotExists    |               |
