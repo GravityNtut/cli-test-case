@@ -3,7 +3,6 @@
 linters:
   enable:
     - errcheck
-    - goimports
     - unused
     - revive # replace golint
     - ineffassign
@@ -11,6 +10,10 @@ linters:
     - govet
     - unconvert
     - prealloc
+    - misspell
+    - dupl
+    - gofmt
+
   disable-all: true
 
 issues:

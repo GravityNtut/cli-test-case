@@ -1,4 +1,4 @@
-package data_product_delete
+package dataproductdelete
 
 import (
 	"context"
@@ -15,7 +15,10 @@ import (
 var ut = testutils.TestUtils{}
 
 func TestFeatures(t *testing.T) {
-	ut.LoadConfig()
+	err := ut.LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
 		Options: &godog.Options{
@@ -40,7 +43,7 @@ func SearchDataProductByCLIFail(dataProduct string) error {
 }
 
 func SearchDataProductByJetstreamFail(dataProduct string) error {
-	nc, _ := nats.Connect("nats://" + ut.Config.JetstreamURL)
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -60,11 +63,14 @@ func SearchDataProductByJetstreamFail(dataProduct string) error {
 
 func DeleteDataProductCommand(dataProduct string) error {
 	commandString := "../gravity-cli product delete "
-	if dataProduct != "[null]" {
+	if dataProduct != testutils.NullString {
 		commandString += dataProduct
 	}
 	commandString += " -s " + ut.Config.JetstreamURL
-	ut.ExecuteShell(commandString)
+	err := ut.ExecuteShell(commandString)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -83,20 +89,19 @@ func DeleteDataProductFail() error {
 	return errors.New("data product 刪除應該要失敗")
 }
 
-func AssertErrorMessages(errorMessage string) error {
-	// TODO
-	// outErr := ut.CmdResult.stderr
-	// if outErr == errorMessage {
-	// 	return nil
-	// }
-	// return errors.New("Cli回傳訊息錯誤")
-	return nil
-}
+// TODO
+// func AssertErrorMessages(errorMessage string) error {
+// 	outErr := ut.CmdResult.Stderr
+// 	if outErr == errorMessage {
+// 		return nil
+// 	}
+// 	return errors.New("Cli回傳訊息錯誤")
+// }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
-	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
-		ut.ClearDataProducts()
+	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
+		ut.RestartDocker()
 		return ctx, nil
 	})
 
@@ -108,5 +113,5 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Then(`^Cli 回傳刪除失敗$`, DeleteDataProductFail)
 	ctx.Then(`^使用 gravity-cli 查詢 "'(.*?)'" 不存在$`, SearchDataProductByCLIFail)
 	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 不存在$`, SearchDataProductByJetstreamFail)
-	ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
+	// ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
 }
