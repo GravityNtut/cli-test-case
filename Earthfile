@@ -1,12 +1,10 @@
 VERSION 0.7
 FROM golang:1.21.3-alpine
 build-cli:
-    RUN apk update && apk upgrade --available \
-        && apk add git
-    GIT CLONE git@github.com:BrobridgeOrg/gravity-cli.git /gravity-cli
-    WORKDIR /gravity-cli
     # 47ca8b652eb4b3032934fb348d07b0f7c889d687 固定commit 版本進行測試
-    RUN git checkout 47ca8b652eb4b3032934fb348d07b0f7c889d687
+    # c16350f4cb4658ff1c204c6782caa2d8e12f9e29
+    GIT CLONE --branch 47ca8b652eb4b3032934fb348d07b0f7c889d687 git@github.com:BrobridgeOrg/gravity-cli.git /gravity-cli
+    WORKDIR /gravity-cli
     RUN go build -cover
     SAVE ARTIFACT gravity-cli AS LOCAL ./
 
