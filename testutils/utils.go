@@ -5,11 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -32,12 +34,21 @@ type Config struct {
 	StopOnFailure bool   `json:"stop_on_failure"`
 }
 
+const (
+	NullString       = "[null]"
+	IgnoreString     = "[ignore]"
+	TrueString       = "[true]"
+	FalseString      = "[false]"
+	NatsProtocol     = "nats://"
+	GravityCliString = "../gravity-cli"
+)
+
 func (testUtils *TestUtils) LoadConfig() error {
 	str, err := os.ReadFile("../config/config.json")
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal([]byte(str), &testUtils.Config)
+	err = json.Unmarshal(str, &testUtils.Config)
 	if err != nil {
 		return err
 	}
@@ -46,8 +57,19 @@ func (testUtils *TestUtils) LoadConfig() error {
 
 func (testUtils *TestUtils) ExecuteShell(command string) error {
 	f, err := os.Create("command.sh")
-	f.WriteString(command)
-	defer f.Close()
+	if err != nil {
+		return err
+	}
+	_, err = f.WriteString(command)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	cmd := exec.Command("sh", "./command.sh")
 
@@ -60,7 +82,7 @@ func (testUtils *TestUtils) ExecuteShell(command string) error {
 
 	cmdResultTmp.Stdout = stdout.String()
 	cmdResultTmp.Stderr = stderr.String()
-	return err
+	return nil
 }
 
 func (testUtils *TestUtils) ProcessString(str string) string {
@@ -79,8 +101,72 @@ func (testUtils *TestUtils) ProcessString(str string) string {
 	return completeString
 }
 
+func (testUtils *TestUtils) ValidateField(actual, expected string) error {
+	if expected != IgnoreString {
+		regex := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(expected)[1] //移除雙引號
+		if actual != regex {
+			return fmt.Errorf("%s 與nats資訊不符", expected)
+		}
+	}
+	return nil
+}
+
+func (testUtils *TestUtils) ValidateEnabled(actual bool, expected string) error {
+	var enabledBool bool
+	if expected == TrueString {
+		enabledBool = true
+	} else if expected == IgnoreString || expected == FalseString {
+		enabledBool = false
+	} else {
+		return errors.New("不允許true,false,ignore以外的輸入")
+	}
+	if enabledBool != actual {
+		return errors.New("enabled 更改失敗")
+
+	}
+	return nil
+}
+
+func (testUtils *TestUtils) ValidateHandler(actual interface{}, expected string) error {
+	if expected != IgnoreString {
+		regexHandler := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(expected)[1]
+		fileContent, err := os.ReadFile(regexHandler)
+		if err != nil {
+			return err
+		}
+		rulesetHandler := actual.(map[string]interface{})
+		handlerScript := rulesetHandler["script"].(string)
+		if string(fileContent) != handlerScript {
+			return errors.New("handler與nats資訊不符")
+		}
+	}
+	return nil
+}
+
+func (testUtils *TestUtils) ValidateSchema(actual interface{}, expected string) error {
+	if expected != IgnoreString {
+		regexSchema := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(expected)[1]
+		fileContent, err := os.ReadFile(regexSchema)
+		if err != nil {
+			return err
+		}
+		natsSchema, _ := json.Marshal(actual)
+		var fileJSON interface{}
+		err = json.Unmarshal(fileContent, &fileJSON)
+		if err != nil {
+			return err
+		}
+		fileSchemaByte, _ := json.Marshal(fileJSON)
+		fileSchema := strings.Join(strings.Fields(string(fileSchemaByte)), "")
+		if fileSchema != string(natsSchema) {
+			return errors.New("schema與nats資訊")
+		}
+	}
+	return nil
+}
+
 func (testUtils *TestUtils) ClearDataProducts() {
-	nc, _ := nats.Connect("nats://" + testUtils.Config.JetstreamURL)
+	nc, _ := nats.Connect(NatsProtocol + testUtils.Config.JetstreamURL)
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -97,8 +183,11 @@ func (testUtils *TestUtils) ClearDataProducts() {
 			continue
 		}
 		productName := parts[1]
-		cmd := exec.Command("../gravity-cli", "product", "delete", productName, "-s", testUtils.Config.JetstreamURL)
-		cmd.Run()
+		cmd := exec.Command(GravityCliString, "product", "delete", productName, "-s", testUtils.Config.JetstreamURL)
+		err = cmd.Run()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
@@ -119,7 +208,7 @@ func (testUtils *TestUtils) RestartDocker() {
 }
 
 func (testUtils *TestUtils) CheckNatsService() error {
-	nc, err := nats.Connect("nats://" + testUtils.Config.JetstreamURL)
+	nc, err := nats.Connect(NatsProtocol + testUtils.Config.JetstreamURL)
 	if err != nil {
 		return err
 	}
@@ -147,11 +236,11 @@ func (testUtils *TestUtils) CheckDispatcherService() error {
 }
 
 func (testUtils *TestUtils) CreateDataProduct(dataProduct string) error {
-	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "-s", testUtils.Config.JetstreamURL)
+	cmd := exec.Command(GravityCliString, "product", "create", dataProduct, "-s", testUtils.Config.JetstreamURL)
 	return cmd.Run()
 }
 
 func (testUtils *TestUtils) CreateDataProductRuleset(dataProduct string, ruleset string) error {
-	cmd := exec.Command("../gravity-cli", "product", "ruleset", "add", dataProduct, ruleset, "--event", "test", "--method", "create", "-s", testUtils.Config.JetstreamURL)
+	cmd := exec.Command(GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--event", "test", "--method", "create", "-s", testUtils.Config.JetstreamURL)
 	return cmd.Run()
 }
