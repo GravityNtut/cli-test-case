@@ -33,7 +33,7 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
-func CreateDataProductCommand(dataProduct string, description string, schema string) error {
+func CreateDataProductCommand(dataProduct string, description string, schema string, enabled string) error {
 	dataProduct = ut.ProcessString(dataProduct)
 	commandString := "../gravity-cli product create "
 	if dataProduct != testutils.NullString {
@@ -47,7 +47,15 @@ func CreateDataProductCommand(dataProduct string, description string, schema str
 	if schema != testutils.IgnoreString {
 		commandString += " --schema " + schema
 	}
-	commandString += " --enabled" + " -s " + ut.Config.JetstreamURL
+	
+	if enabled == testutils.TrueString {
+		commandString += " --enabled"
+	} else if enabled == testutils.FalseString {
+		commandString += " --enabled=false"
+	} else if enabled != testutils.IgnoreString {
+		return errors.New("enabled 參數錯誤")
+	}
+	commandString += " -s " + ut.Config.JetstreamURL
 	err := ut.ExecuteShell(commandString)
 	if err != nil {
 		return err
@@ -112,7 +120,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
-	ctx.When(`^創建 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
+	ctx.When(`^創建 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
 	ctx.Then(`^Cli 回傳 "'(.*?)'" 建立成功$`, CreateDataProductCommandSuccess)
 	ctx.Then(`^Cli 回傳建立失敗$`, CreateDataProductCommandFail)
 	ctx.Then(`^使用 gravity-cli 查詢 "'(.*?)'" 存在$`, SearchDataProductByCLISuccess)
