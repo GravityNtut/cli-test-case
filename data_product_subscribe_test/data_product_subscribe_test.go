@@ -2,6 +2,7 @@ package dataproductsubscribe
 
 import (
 	"bytes"
+	"fmt"
 	"os/exec"
 	"syscall"
 	"test-case/testutils"
@@ -30,6 +31,7 @@ func TestFeatures(t *testing.T) {
 }
 
 func SubscribeDataProduct() error {
+	const TIMEOUT = 3
 	cmd := exec.Command("../gravity-cli", "product", "sub", "drink", "-s", ut.Config.JetstreamURL)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -42,8 +44,8 @@ func SubscribeDataProduct() error {
 	go func() {
 		done <- cmd.Wait()
 	}()
-
-	after := time.After(3 * time.Second)
+	// 接收三秒內的資料
+	after := time.After(TIMEOUT * time.Second)
 	select {
 	case <-after:
 		cmd.Process.Signal(syscall.SIGINT)
@@ -53,6 +55,7 @@ func SubscribeDataProduct() error {
 	case <-done:
 		break
 	}
+	fmt.Println(stdout.String())
 	return nil
 }
 
