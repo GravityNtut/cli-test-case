@@ -101,7 +101,7 @@ func DeleteDataProductFail() error {
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
-		ut.ClearDataProducts()
+		ut.RestartDocker()
 		return ctx, nil
 	})
 

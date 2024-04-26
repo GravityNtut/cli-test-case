@@ -35,11 +35,12 @@ type Config struct {
 }
 
 const (
-	NullString   = "[null]"
-	IgnoreString = "[ignore]"
-	TrueString   = "[true]"
-	FalseString  = "[false]"
-	NatsProtocol = "nats://"
+	NullString       = "[null]"
+	IgnoreString     = "[ignore]"
+	TrueString       = "[true]"
+	FalseString      = "[false]"
+	NatsProtocol     = "nats://"
+	GravityCliString = "../gravity-cli"
 )
 
 func (testUtils *TestUtils) LoadConfig() error {
@@ -172,9 +173,37 @@ func (testUtils *TestUtils) ClearDataProducts() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = js.PurgeStream("KV_GVT_default_PRODUCT")
+
+	streams := js.StreamNames()
+
+	re := regexp.MustCompile(`^GVT_default_DP_(.*)`)
+	for stringName := range streams {
+		parts := re.FindStringSubmatch(stringName)
+		if parts == nil {
+			continue
+		}
+		productName := parts[1]
+		cmd := exec.Command(GravityCliString, "product", "delete", productName, "-s", testUtils.Config.JetstreamURL)
+		err = cmd.Run()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+func (testUtils *TestUtils) RestartDocker() {
+	cmd := exec.Command("docker", "compose", "down")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	err := cmd.Run()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err, stderr.String())
+	}
+	cmd = exec.Command("docker", "compose", "-f", "../docker-compose.yaml", "up", "-d")
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err, stderr.String())
 	}
 }
 
@@ -207,11 +236,11 @@ func (testUtils *TestUtils) CheckDispatcherService() error {
 }
 
 func (testUtils *TestUtils) CreateDataProduct(dataProduct string) error {
-	cmd := exec.Command("../gravity-cli", "product", "create", dataProduct, "-s", testUtils.Config.JetstreamURL)
+	cmd := exec.Command(GravityCliString, "product", "create", dataProduct, "-s", testUtils.Config.JetstreamURL)
 	return cmd.Run()
 }
 
 func (testUtils *TestUtils) CreateDataProductRuleset(dataProduct string, ruleset string) error {
-	cmd := exec.Command("../gravity-cli", "product", "ruleset", "add", dataProduct, ruleset, "--event", "test", "--method", "create", "-s", testUtils.Config.JetstreamURL)
+	cmd := exec.Command(GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--event", "test", "--method", "create", "-s", testUtils.Config.JetstreamURL)
 	return cmd.Run()
 }
