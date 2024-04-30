@@ -100,12 +100,12 @@ func UpdateRulesetCommand(dataProduct string, ruleset string, method string, eve
 	if desc != testutils.IgnoreString {
 		commandString += " --desc " + desc
 	}
-	if enabled != testutils.IgnoreString {
-		if enabled == testutils.TrueString {
-			commandString += " --enabled"
-		} else {
-			return errors.New("enabled不允許true或ignore以外的值")
-		}
+	if enabled == testutils.TrueString {
+		commandString += " --enabled"
+	} else if enabled == testutils.FalseString {
+		commandString += " --enabled=false"
+	} else if enabled != testutils.IgnoreString {
+		return errors.New("enabled 參數錯誤")
 	}
 	if handler != testutils.IgnoreString {
 		commandString += " --handler " + handler
@@ -217,8 +217,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	})
 	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有 data product "'(.*?)'"$`, ut.CreateDataProduct)
-	ctx.Given(`^已有 data product 的 ruleset "'(.*?)'" "'(.*?)'"$`, ut.CreateDataProductRuleset)
+	ctx.Given(`^已有 data product "'(.*?)'" "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.Given(`^已有 data product 的 ruleset "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, ut.CreateDataProductRuleset)
 	ctx.Given(`^儲存 nats 現有 data product ruleset 副本 "'(.*?)'" "'(.*?)'"$`, SaveRuleset)
 	ctx.When(`^更新 dataproduct "'(.*?)'" ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, UpdateRulesetCommand)
 	ctx.Then(`^Cli 回傳更改成功$`, UpdateRulesetCommandSuccess)
