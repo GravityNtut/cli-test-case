@@ -5,32 +5,33 @@ Given 已開啟服務 nats
 Given 已開啟服務 dispatcher
 #Scenario
 	Scenario: 針對更新data product ruleset成功情境
-	Given 已有 data product "'drink'"
-    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'" 
+	Given 已有 data product "'drink'" "'[true]'"
+    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'" "'<RulesetEnabled>'"
 	When 更新 dataproduct "'<ProductName>'" ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
 	Then Cli 回傳更改成功
 	And 使用 nats jetstream查詢 "'drink'" 的 "'drinkCreated'" 參數更改成功 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
 	Examples:
-    |  ID  | ProductName | Ruleset       | Event         | Method    | 		Schema          | 		Handler_script	   | Pk       | Desc          | Enabled  |
-	| M(1) | drink       | drinkCreated  | drinkCreated  | create    | ./assets/schema.json |  ./assets/handler.js     | id       |  description  | [true]   |
-	| M(2) | drink       | drinkCreated  | drinkCreated  | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |
+    |  ID  | ProductName | Ruleset       | Event         | Method    | 		Schema          | 		Handler_script	   | Pk       | Desc          | Enabled  | RulesetEnabled |
+	| M(1) | drink       | drinkCreated  | drinkCreated  | create    | ./assets/schema.json |  ./assets/handler.js     | id       |  description  | [true]   |    [ignore]    |
+	| M(2) | drink       | drinkCreated  | drinkCreated  | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |    [ignore]    |
     #單獨update method會跳Error: Invalid method
-    | M(3) | drink       | drinkCreated  | [ignore]      | create    | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |
-    | M(4) | drink       | drinkCreated  | [ignore]      | [ignore]  |./assets/schema.json  | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |
-    | M(5) | drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 	./assets/handler.js    | [ignore] | [ignore]      | [ignore] |
-    | M(6) | drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | id       | [ignore]      | [ignore] |
-	| M(7) | drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | "id, num"| [ignore]      | [ignore] |
-    | M(8) | drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | ""       | [ignore]      | [ignore] |
-    | M(9) | drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | description   | [ignore] |
-    | M(10)| drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | ""            | [ignore] |
-    | M(11)| drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | " "           | [ignore] |
-    | M(12)| drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [true]   |
-	| M(13)| drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |
+    | M(3) | drink       | drinkCreated  | [ignore]      | create    | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |    [ignore]    |
+    | M(4) | drink       | drinkCreated  | [ignore]      | [ignore]  |./assets/schema.json  | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |    [ignore]    |
+    | M(5) | drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 	./assets/handler.js    | [ignore] | [ignore]      | [ignore] |    [ignore]    |
+    | M(6) | drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | id       | [ignore]      | [ignore] |    [ignore]    |
+	| M(7) | drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | "id, num"| [ignore]      | [ignore] |    [ignore]    |
+    | M(8) | drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | ""       | [ignore]      | [ignore] |    [ignore]    |
+    | M(9) | drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | description   | [ignore] |    [ignore]    |
+    | M(10)| drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | ""            | [ignore] |    [ignore]    |
+    | M(11)| drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | " "           | [ignore] |    [ignore]    |
+    | M(12)| drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [true]   |    [ignore]    |
+	| M(13)| drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [false]  |    [true]      |
+	| M(14)| drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |    [ignore]    |
 
 #Scenario
 	Scenario: 針對更新data product ruleset失敗情境
-	Given 已有 data product "'drink'"
-    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'" 
+	Given 已有 data product "'drink'" "'[ignore]'"
+    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'" "'[ignore]'"
 	Given 儲存 nats 現有 data product ruleset 副本 "'drink'" "'drinkCreated'" 
 	When 更新 dataproduct "'<ProductName>'" ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
 	Then Cli 回傳更改失敗
