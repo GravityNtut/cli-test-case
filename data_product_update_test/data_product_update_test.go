@@ -191,7 +191,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有 data product "'(.*?)'" "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.Given(`^已有 data product "'(.*?)'" enabled "'(.*?)'"$`, ut.CreateDataProduct)
 	ctx.Given(`^儲存 nats 現有 data product 副本 "'(.*?)'"$`, StoreNowDataProduct)
 	ctx.When(`^更新 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, UpdateDataProductCommand)
 	ctx.Then(`^Cli 回傳更改成功$`, UpdateDataProductCommandSuccess)
