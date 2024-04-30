@@ -6,7 +6,7 @@ Scenario:
 
 #Scenario: 
 Scenario: 針對已存在的Data Product進行刪除 成功情境
-    Given 已有 data product "'drink'"
+    Given 已有 data product "'drink'"  "'[ignore]'"
     When 刪除 data product "'<ProductName>'"
     Then Cli 回傳 "'<ProductName>'" 刪除成功
     Then 使用 gravity-cli 查詢 "'<ProductName>'" 不存在

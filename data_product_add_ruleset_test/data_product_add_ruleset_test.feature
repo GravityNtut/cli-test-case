@@ -6,7 +6,7 @@ Scenario:
 
 #Scenario
     Scenario: 針對data product加入ruleset，成功情境
-    Given 已有data product "'drink'"
+    Given 已有data product "'drink'" "'[ignore]'"
     When "'<ProductName>'" 創建ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
     Then ruleset 創建成功
     Then 使用gravity-cli 查詢 "'<ProductName>'" 的 "'<Ruleset>'" 存在
@@ -32,7 +32,7 @@ Scenario:
 
 #Scenario
     Scenario: 針對data product加入ruleset，重複建立情境
-    Given 已有data product "'drink'"
+    Given 已有data product "'drink'" "'[ignore]'"
     When "'<ProductName>'" 創建ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
     Then ruleset 創建成功
     Then 使用gravity-cli 查詢 "'<ProductName>'" 的 "'<Ruleset>'" 存在
@@ -46,7 +46,7 @@ Scenario:
 
 #Scenario
     Scenario Outline: 針對data product加入ruleset，失敗情境
-    Given 已有data product "'drink'"
+    Given 已有data product "'drink'" "'[ignore]'"
     When "'<ProductName>'" 創建ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
     Then ruleset 創建失敗
     # And 應有錯誤訊息 "'<Error_message>'"
