@@ -47,7 +47,7 @@ func CreateDataProductCommand(dataProduct string, description string, schema str
 	if schema != testutils.IgnoreString {
 		commandString += " --schema " + schema
 	}
-	
+
 	if enabled == testutils.TrueString {
 		commandString += " --enabled"
 	} else if enabled == testutils.FalseString {

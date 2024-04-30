@@ -52,7 +52,6 @@ func UpdateDataProductCommand(dataProduct string, description string, enabled st
 		commandString += " --desc " + description
 	}
 
-
 	if enabled == testutils.TrueString {
 		commandString += " --enabled"
 	} else if enabled == testutils.FalseString {
@@ -60,7 +59,7 @@ func UpdateDataProductCommand(dataProduct string, description string, enabled st
 	} else if enabled != testutils.IgnoreString {
 		return errors.New("enabled 參數錯誤")
 	}
-	
+
 	if schema != testutils.IgnoreString {
 		commandString += " --schema " + schema
 	}
