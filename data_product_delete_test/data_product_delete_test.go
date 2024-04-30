@@ -107,7 +107,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有 data product "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.Given(`^已有 data product "'(.*?)'" "'(.*?)'"$`, ut.CreateDataProduct)
 	ctx.When(`^刪除 data product "'(.*?)'"$`, DeleteDataProductCommand)
 	ctx.Then(`^Cli 回傳 "'(.*?)'" 刪除成功$`, DeleteDataProductSuccess)
 	ctx.Then(`^Cli 回傳刪除失敗$`, DeleteDataProductFail)

@@ -235,12 +235,26 @@ func (testUtils *TestUtils) CheckDispatcherService() error {
 	return errors.New("dispatcher container 不存在")
 }
 
-func (testUtils *TestUtils) CreateDataProduct(dataProduct string) error {
-	cmd := exec.Command(GravityCliString, "product", "create", dataProduct, "-s", testUtils.Config.JetstreamURL)
-	return cmd.Run()
+func (testUtils *TestUtils) CreateDataProduct(dataProduct string, enabled string) error {
+	if enabled == TrueString {	
+		cmd := exec.Command(GravityCliString, "product", "create", dataProduct, "--enabled", "-s", testUtils.Config.JetstreamURL)
+		return cmd.Run()
+	} else if enabled == IgnoreString || enabled == FalseString {
+		cmd := exec.Command(GravityCliString, "product", "create", dataProduct, "-s", testUtils.Config.JetstreamURL)
+		return cmd.Run()
+	} else {
+		return errors.New("dataProduct create 參數錯誤")
+	}
 }
 
-func (testUtils *TestUtils) CreateDataProductRuleset(dataProduct string, ruleset string) error {
-	cmd := exec.Command(GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--event", "test", "--method", "create", "-s", testUtils.Config.JetstreamURL)
-	return cmd.Run()
+func (testUtils *TestUtils) CreateDataProductRuleset(dataProduct string, ruleset string, enabled string) error {
+	if enabled == TrueString {
+		cmd := exec.Command(GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--enabled", "--event", "test", "--method", "create", "-s", testUtils.Config.JetstreamURL)
+		return cmd.Run()
+	} else if enabled == IgnoreString || enabled == FalseString {
+		cmd := exec.Command(GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--event", "test", "--method", "create", "-s", testUtils.Config.JetstreamURL)
+		return cmd.Run()
+	} else {
+		return errors.New("ruleset add 參數錯誤")
+	}
 }
