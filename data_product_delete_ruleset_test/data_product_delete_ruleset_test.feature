@@ -6,8 +6,8 @@ Scenario:
 
 #Scenario
     Scenario: 針對刪除data product ruleset成功情境
-    Given 已有 date product "'drink'"
-    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'"
+    Given 已有 date product "'drink'" enabled "'[true]'"
+    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'" enabled "'[true]'"
     When 刪除 "'<ProductName>'" 的 ruleset "'<RulesetName>'"
     Then Cli 回傳刪除成功
     Then 使用 gravity-cli 查詢 "'<ProductName>'" 的 "'<RulesetName>'" 不存在
@@ -17,8 +17,8 @@ Scenario:
 
 #Scenario
     Scenario: 針對刪除data product ruleset失敗情境
-    Given 已有 date product "'drink'"
-    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'"
+    Given 已有 date product "'drink'" enabled "'[true]'"
+    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'" enabled "'[true]'"
     When 刪除 "'<ProductName>'" 的 ruleset "'<RulesetName>'"
     Then Cli 回傳刪除失敗
 	# And 應有錯誤訊息 "'<Error_message>'"
