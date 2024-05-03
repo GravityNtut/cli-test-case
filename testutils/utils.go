@@ -101,6 +101,18 @@ func (testUtils *TestUtils) ProcessString(str string) string {
 	return completeString
 }
 
+func (testUtils *TestUtils) AssertStringEqual(actual string, expected string) {
+	if expected != actual {
+		log.Fatalf("expected: %s, actual: %s", expected, actual)
+	}
+}
+
+func (testUtils *TestUtils) AssertIntEqual(actual int, expected int) {
+	if expected != actual {
+		log.Fatalf("expected: %d, actual: %d", expected, actual)
+	}
+}
+
 func (testUtils *TestUtils) ValidateField(actual, expected string) error {
 	if expected != IgnoreString {
 		regex := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(expected)[1] //移除雙引號
@@ -186,7 +198,7 @@ func (testUtils *TestUtils) ClearDataProducts() {
 		cmd := exec.Command(GravityCliString, "product", "delete", productName, "-s", testUtils.Config.JetstreamURL)
 		err = cmd.Run()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf(err.Error())
 		}
 	}
 }
@@ -197,13 +209,13 @@ func (testUtils *TestUtils) RestartDocker() {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Fatal(err, stderr.String())
+		log.Fatalf(err.Error(), stderr.String())
 	}
 	cmd = exec.Command("docker", "compose", "-f", "../docker-compose.yaml", "up", "-d")
 	cmd.Stderr = &stderr
 	err = cmd.Run()
 	if err != nil {
-		log.Fatal(err, stderr.String())
+		log.Fatalf(err.Error(), stderr.String())
 	}
 }
 
