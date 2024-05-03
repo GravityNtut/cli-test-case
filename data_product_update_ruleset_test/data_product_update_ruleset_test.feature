@@ -6,7 +6,7 @@ Given 已開啟服務 dispatcher
 #Scenario
 	Scenario: 針對更新data product ruleset成功情境
 	Given 已有 data product "'drink'" enabled "'[true]'"
-    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'" enabled "'<GivenEnabled>'"
+    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'" enabled "'<GivenRSEnabled>'"
 	When 更新 dataproduct "'<ProductName>'" ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
 	Then Cli 回傳更改成功
 	And 使用 nats jetstream查詢 "'drink'" 的 "'drinkCreated'" 參數更改成功 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
