@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"strings"
 	"test-case/testutils"
 	"testing"
 
@@ -13,14 +14,14 @@ import (
 )
 
 var ut = testutils.TestUtils{}
-var EventCount int = 10
+var EventCount = 10
 
 type JSONSubData struct {
 	Event     string      `json:"event"`
 	Header    interface{} `json:"header"`
 	Method    string      `json:"method"`
 	Payload   interface{} `json:"payload"`
-	Pk        interface{} `json:"primarykey"`
+	Pk        []string    `json:"primarykey"`
 	Product   string      `json:"product"`
 	Seq       int         `json:"seq"`
 	Subject   string      `json:"subject"`
@@ -46,7 +47,7 @@ func TestFeatures(t *testing.T) {
 		t.Fatal("non-zero status returned, failed to run feature tests")
 	}
 }
-func FindJson(data string) []string {
+func FindJSON(data string) []string {
 	var result []string
 	stringStart := -1
 	lvl := 0
@@ -93,7 +94,7 @@ func SubscribeDataProductCommand(productName string, subName string, partitions 
 }
 
 func DisplayData() error {
-	resultStringList := FindJson(ut.CmdResult.Stdout)
+	resultStringList := FindJSON(ut.CmdResult.Stdout)
 	fmt.Println(resultStringList)
 	return nil
 }
@@ -126,13 +127,14 @@ func CreateDataProduct(dataProduct string) error {
 
 var DataProduct string
 var Ruleset string
-var Method string = "create"
 var Event string
-var Pk string = "id"
-var RulesetDesc string = "drink創建事件"
-var Handler string = "./assets/handler.js"
-var Schema string = "./assets/schema.json"
-var Enabled string = "true"
+
+const Method string = "create"
+const Pk string = "id,name"
+const RulesetDesc string = "drink創建事件"
+const Handler string = "./assets/handler.js"
+const Schema string = "./assets/schema.json"
+const Enabled string = "true"
 
 func CreateDataProductRuleset(dataProduct string, ruleset string) error {
 	DataProduct = dataProduct
@@ -146,9 +148,10 @@ func CreateDataProductRuleset(dataProduct string, ruleset string) error {
 	return nil
 }
 func ValidateSubResult(partitions string, seq string) error {
-	resultStringList := FindJson(ut.CmdResult.Stdout)
+	resultStringList := FindJSON(ut.CmdResult.Stdout)
 	if len(resultStringList) != EventCount {
-		return errors.New("Event數量與發佈數量不符合")
+		errString := fmt.Sprintf("Event數量與發佈數量不符合, 預期數量: %d, 獲取數量: %d", EventCount, len(resultStringList))
+		return errors.New(errString)
 	}
 	for i, jsonData := range resultStringList {
 		var UnmarshalResult JSONSubData
@@ -156,14 +159,21 @@ func ValidateSubResult(partitions string, seq string) error {
 		if err != nil {
 			return errors.New("json unmarshal failed" + err.Error())
 		}
-		// payload := `{"id":%d, "name":"test%d", "kcal":%d, "price":%d}`
-		// expectPayload := fmt.Sprintf(payload, i+1, i+1, i*100, i+20)
+
+		payloadString := fmt.Sprintf(`{"id":%d, "name":"test%d", "kcal":%d, "price":%d}`, i+1, i+1, i*100, i+20)
+		expectPayload := ut.FormatJSONData(payloadString)
+
 		ut.AssertStringEqual(UnmarshalResult.Event, Event)
-		// ut.AssertStringEqual(UnmarshalResult.Method, Method)
 		ut.AssertStringEqual(UnmarshalResult.Product, DataProduct)
-		// ut.AssertStringEqual(UnmarshalResult.Payload, expectPayload)
-		// ut.AssertStringEqual(UnmarshalResult.Pk, Pk)
+		payloadByte, _ := json.Marshal(UnmarshalResult.Payload)
+		resultPayload := string(payloadByte)
+		ut.AssertStringEqual(resultPayload, expectPayload)
+		pkExpect := strings.Split(Pk, ",")
+		for i := 0; i < len(pkExpect); i++ {
+			ut.AssertStringEqual(UnmarshalResult.Pk[i], pkExpect[i])
+		}
 		ut.AssertIntEqual(UnmarshalResult.Seq, i+1)
+		// ut.AssertStringEqual(UnmarshalResult.Method, Method)
 	}
 	return nil
 }

@@ -103,13 +103,13 @@ func (testUtils *TestUtils) ProcessString(str string) string {
 
 func (testUtils *TestUtils) AssertStringEqual(actual string, expected string) {
 	if expected != actual {
-		log.Fatalf("expected: %s, actual: %s", expected, actual)
+		log.Fatalf("\nExpect: %s\nActual: %s\n", expected, actual)
 	}
 }
 
 func (testUtils *TestUtils) AssertIntEqual(actual int, expected int) {
 	if expected != actual {
-		log.Fatalf("expected: %d, actual: %d", expected, actual)
+		log.Fatalf("\nExpect: %d\nActual: %d\n", expected, actual)
 	}
 }
 
@@ -163,18 +163,26 @@ func (testUtils *TestUtils) ValidateSchema(actual interface{}, expected string) 
 			return err
 		}
 		natsSchema, _ := json.Marshal(actual)
-		var fileJSON interface{}
-		err = json.Unmarshal(fileContent, &fileJSON)
-		if err != nil {
-			return err
-		}
-		fileSchemaByte, _ := json.Marshal(fileJSON)
-		fileSchema := strings.Join(strings.Fields(string(fileSchemaByte)), "")
+		fileSchema := testUtils.FormatJSONData(string(fileContent))
 		if fileSchema != string(natsSchema) {
 			return errors.New("schema與nats資訊")
 		}
 	}
 	return nil
+}
+
+func (testUtils *TestUtils) FormatJSONData(JSONData string) string {
+	var JSON interface{}
+	err := json.Unmarshal([]byte(JSONData), &JSON)
+	if err != nil {
+		log.Fatalf("%s Unmarshal Fail %s", JSONData, err.Error())
+	}
+	JSONByte, err := json.Marshal(JSON)
+	if err != nil {
+		log.Fatalf("%s Marshal Fail %s", JSONData, err.Error())
+	}
+	expectJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
+	return expectJSONStringResult
 }
 
 func (testUtils *TestUtils) ClearDataProducts() {
