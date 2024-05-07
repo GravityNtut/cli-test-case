@@ -2,7 +2,7 @@ version: '1'
 
 services:
   nats-jetstream:
-    image: "nats:2.9.23-alpine3.18"
+    image: "nats:2.10.14-alpine3.19"
     container_name: "nats-jetstream"
     ports:
       - "32803:32803"
@@ -15,7 +15,7 @@ services:
       - nats
 
   gravity-dispatcher:
-    image: "ghcr.io/brobridgeorg/gravity/gravity-dispatcher:3de6b01"
+    image: "e85ccfdca268"
     # restart: always
     container_name: "gravity-dispatcher"
     environment:
@@ -32,6 +32,25 @@ services:
           sleep 1;
         done
         /gravity-dispatcher
+    networks:
+      - nats
+  atomic:
+    image: "ghcr.io/brobridgeorg/atomic/atomic:v0.0.5-20231012-ubi"
+    # restart: always
+    container_name: "atomic"
+    volumes:
+      - "./assets/atomic:/data/atomic"
+    depends_on:
+      - "nats-jetstream"
+      - "gravity-dispatcher"
+    user: "1001:1000"
+    ports:
+      - 1880:1880
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        npm start --cache /data/atomic/.npm -- --userDir /data/atomic /data/atomic/flows.json
     networks:
       - nats
 networks:

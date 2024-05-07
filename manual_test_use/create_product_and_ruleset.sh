@@ -21,10 +21,10 @@
 	--pk=name
 
 ../gravity-cli pub drinkCreated '{"id":1,"name":"test","price":100,"kcal":50}'
-../gravity-cli pub drinkCreated '{"id":2,"name":"Hi","price":200,"kcal":10}'
-../gravity-cli pub drinkCreated 'id":3,"name":"abc","price":300,"kcal":150}'
-../gravity-cli pub drinkCreated '{"id":4,"name":"sa","price":400,"kcal":1000}'
-../gravity-cli pub drinkCreated '{"id":5,"name":"sssa","price":500,"kcal":600}'
+# ../gravity-cli pub drinkCreated '{"id":2,"name":"Hi","price":200,"kcal":10}'
+# ../gravity-cli pub drinkCreated 'id":3,"name":"abc","price":300,"kcal":150}'
+# ../gravity-cli pub drinkCreated '{"id":4,"name":"sa","price":400,"kcal":1000}'
+# ../gravity-cli pub drinkCreated '{"id":5,"name":"sssa","price":500,"kcal":600}'
 
 
-../gravity-cli pub drinkUpdate '{"id":1,"name":"test123"}'
+# ../gravity-cli pub drinkUpdate '{"id":1,"name":"test123"}'

@@ -1,0 +1,910 @@
+[
+    {
+        "id": "1f88922b.593dce",
+        "type": "tab",
+        "label": "_CDC",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "f9634b5a.703988",
+        "type": "Gravity Server",
+        "server": "gravity-nats",
+        "port": "4222"
+    },
+    {
+        "id": "b56bef5a.61be",
+        "type": "MSSQL Connection",
+        "name": "${TARGET_DB_CNAME}",
+        "server": "${TARGET_DB_HOST}",
+        "port": "${TARGET_DB_PORT}",
+        "authType": "default",
+        "domain": "",
+        "database": "${TARGET_DB_DBNAME}",
+        "poolMin": "1",
+        "poolMax": "10",
+        "poolIdleTimeoutMillis": "30000",
+        "requestTimeout": "15000",
+        "connectionTimeout": "15000"
+    },
+    {
+        "id": "c5ba67ba.88b63f",
+        "type": "Gravity Subscriber",
+        "z": "1f88922b.593dce",
+        "name": "",
+        "server": "f9634b5a.703988",
+        "domain": "default",
+        "product": "users",
+        "initialLoad": false,
+        "delivery": "new",
+        "startseq": 1,
+        "manuallyAck": false,
+        "x": 150,
+        "y": 340,
+        "wires": [
+            [
+                "034ea31b.ae1d0a",
+                "fb676c1f.ab7b15"
+            ]
+        ]
+    },
+    {
+        "id": "034ea31b.ae1d0a",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "Input",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 390,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "345026d1.286102",
+        "type": "function",
+        "z": "1f88922b.593dce",
+        "name": "insert",
+        "func": "var TB_NAME = msg.payloadBak.TB_NAME;\nvar keys = \"\";\nvar values = \"\";\nvar obj = msg.payloadBak.record;\nvar lastKey = Object.keys(obj).pop();\n\nfor(var key in obj) {\n    \n//    if (key == \"id\") {\n//        continue;\n//    }\n    \n    var value = obj[key];\n\n    switch (typeof value) {\n        case \"string\":\n            if (value != 'null') {\n                value = value.replace(/'/g, \"''\");\n                keys = keys + key;\n                values += \"'\" + value + \"'\";\n            } else {\n                keys = keys + key;\n                values = values + value;\n            }\n            break;\n        case \"number\":\n            keys = keys + key ;\n            values = values + value ;\n            break;\n        default:\n            keys = keys + key;\n            values = values  + value ;\n            break;\n    }\n\n    if (key != lastKey) {\n        keys = keys + \",\";\n        values = values + \",\";\n    }\n}\nvar sql = \"INSERT INTO [dbo].[\"+TB_NAME+\"] (\"+keys+\") VALUES (\"+values+\");\";\n//node.warn(sql1 + sql2);\nmsg.query=sql;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 340,
+        "wires": [
+            [
+                "1d18bbe6.96b2fc",
+                "d9057db3.d05645"
+            ]
+        ]
+    },
+    {
+        "id": "1d18bbe6.96b2fc",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "sqlCmd",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1060,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "e21d3fef.f087dd",
+        "type": "switch",
+        "z": "1f88922b.593dce",
+        "name": "checkEvent",
+        "property": "payload.eventName",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "usersDelete",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "usersCreate",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "usersInitialize",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "usersUpdate",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 4,
+        "x": 590,
+        "y": 340,
+        "wires": [
+            [
+                "d953e5af.9c20ec"
+            ],
+            [
+                "345026d1.286102"
+            ],
+            [
+                "345026d1.286102"
+            ],
+            [
+                "64840859.31ca5f"
+            ]
+        ]
+    },
+    {
+        "id": "d953e5af.9c20ec",
+        "type": "function",
+        "z": "1f88922b.593dce",
+        "name": "delete",
+        "func": "var TB_NAME = msg.payloadBak.TB_NAME;\n\n// Extract the PK object\nconst columnValues = msg.payloadBak.record;\nconst pkArray = msg.payloadBak.PK.split(',');\n\n// Initialize an array to store the conditions\nconst conditions = [];\n\n// Loop through keys in the PK array\nfor (const columnName of pkArray) {\n  // Get the corresponding value from the columnValues object\n  const columnValue = columnValues[columnName];\n  \n  // Add the condition to the array\n  conditions.push(`${columnName} = '${columnValue}'`);\n}\n\n// Join the conditions with \"AND\" to create the WHERE clause\nconst whereClause = conditions.join(\" AND \");\n\n// Use 'whereClause' in SQL statement\nconst sqlStatement = `DELETE FROM ${TB_NAME} WHERE ${whereClause}`;\n\nmsg.query=sqlStatement;\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 300,
+        "wires": [
+            [
+                "1d18bbe6.96b2fc",
+                "d9057db3.d05645"
+            ]
+        ]
+    },
+    {
+        "id": "d9057db3.d05645",
+        "type": "MSSQL Execute",
+        "z": "1f88922b.593dce",
+        "name": "TargetDB",
+        "connection": "b56bef5a.61be",
+        "querySource": "dynamic",
+        "command": "",
+        "outputPropType": "msg",
+        "outputProp": "payload",
+        "x": 1060,
+        "y": 340,
+        "wires": [
+            [
+                "436188da.cb6bcd",
+                "1212704f.8b0b90"
+            ]
+        ]
+    },
+    {
+        "id": "436188da.cb6bcd",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "sqlResult",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1300,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "64840859.31ca5f",
+        "type": "function",
+        "z": "1f88922b.593dce",
+        "name": "update",
+        "func": "var TB_NAME = msg.payloadBak.TB_NAME;\nvar params = \"\";\nvar keys = \"\";\nvar obj = msg.payloadBak.record;\nvar lastKey = Object.keys(obj).pop();\n\nfor(var key in obj) {\n    \n//    if (key == \"id\") {\n//        continue;\n//    }\n    \n    var value = obj[key];\n\n    switch (typeof value) {\n        case \"string\":\n            if (value != 'null') {\n                params = params + key + \"='\" + value.replace(\"'\",\"\") + \"'\";\n            } else {\n                params = params + key + \"=\" + value;\n            }\n            \n            break;\n        case \"number\":\n            params = params + key + \"=\"  + value ;\n            break;\n        default:\n            params = params + key + \"=\" + value;\n            break;\n    }\n    if (params.slice(-1) != \",\" && key != lastKey){\n        params=params + \",\";\n        \n    }\n}\n\n// Extract the PK object\nconst columnValues = msg.payloadBak.record;\nconst pkArray = msg.payloadBak.PK.split(',');\n\n// Initialize an array to store the conditions\nconst conditions = [];\n\n// Loop through keys in the PK array\nfor (const columnName of pkArray) {\n  // Get the corresponding value from the columnValues object\n  const columnValue = columnValues[columnName];\n  \n  // Add the condition to the array\n  conditions.push(`${columnName} = '${columnValue}'`);\n}\n\n// Join the conditions with \"AND\" to create the WHERE clause\nconst whereClause = conditions.join(\" AND \");\n\n\n// Use 'whereClause' in SQL statement\nconst sqlStatement = `UPDATE [dbo].[${TB_NAME}] SET ${params} WHERE ${whereClause}`;\n\nmsg.query=sqlStatement;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 380,
+        "wires": [
+            [
+                "1d18bbe6.96b2fc",
+                "d9057db3.d05645"
+            ]
+        ]
+    },
+    {
+        "id": "d277efa4.11ffd2",
+        "type": "comment",
+        "z": "1f88922b.593dce",
+        "name": "CDC from users",
+        "info": "",
+        "x": 200,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "51ea669f.a315f3",
+        "type": "comment",
+        "z": "1f88922b.593dce",
+        "name": "Sync to Target",
+        "info": "",
+        "x": 1090,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "2c765146.5e1753",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "Result",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1490,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "1212704f.8b0b90",
+        "type": "switch",
+        "z": "1f88922b.593dce",
+        "name": "",
+        "property": "error",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "null"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1290,
+        "y": 340,
+        "wires": [
+            [
+                "2c765146.5e1753",
+                "0c7e08b8.bde8fa"
+            ],
+            [
+                "9683fb10.51c767"
+            ]
+        ]
+    },
+    {
+        "id": "9683fb10.51c767",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "errMsg",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1500,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "4c7f2eeb.6462b9",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "chkPre",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 580,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "0c7e08b8.bde8fa",
+        "type": "change",
+        "z": "1f88922b.593dce",
+        "name": "restoreInfo",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "{}",
+                "tot": "json"
+            },
+            {
+                "t": "set",
+                "p": "payload.seq",
+                "pt": "msg",
+                "to": "payloadBak.seq",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload._msgid",
+                "pt": "msg",
+                "to": "_msgid",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload.query",
+                "pt": "msg",
+                "to": "query",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1510,
+        "y": 320,
+        "wires": [
+            [
+                "8fe209a1.79ff75",
+                "6c638639.d6203f"
+            ]
+        ]
+    },
+    {
+        "id": "8fe209a1.79ff75",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1750,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "6c638639.d6203f",
+        "type": "file",
+        "z": "1f88922b.593dce",
+        "d": true,
+        "name": "",
+        "filename": "/tmp/output.log",
+        "appendNewline": true,
+        "createDir": false,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 1780,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fb676c1f.ab7b15",
+        "type": "change",
+        "z": "1f88922b.593dce",
+        "name": "prepare",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payloadBak",
+                "pt": "msg",
+                "to": "payload",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payloadBak.TB_NAME",
+                "pt": "msg",
+                "to": "payload.table",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payloadBak.PK",
+                "pt": "msg",
+                "to": "id",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "payload.record.created_at",
+                "pt": "msg",
+                "to": "$replace($string(payload.record.created_at),'\"','')",
+                "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "payload.record.updated_at",
+                "pt": "msg",
+                "to": "$replace($string(payload.record.updated_at),'\"','')",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 400,
+        "y": 340,
+        "wires": [
+            [
+                "e21d3fef.f087dd",
+                "4c7f2eeb.6462b9"
+            ]
+        ]
+    },
+    {
+        "id": "15c99734.57244d",
+        "type": "Gravity Subscriber",
+        "z": "1f88922b.593dce",
+        "name": "",
+        "server": "f9634b5a.703988",
+        "domain": "default",
+        "product": "user_addresses",
+        "initialLoad": false,
+        "delivery": "new",
+        "startseq": 1,
+        "manuallyAck": false,
+        "x": 150,
+        "y": 580,
+        "wires": [
+            [
+                "5137fcd7.171ae3",
+                "f34264ba.7405fa"
+            ]
+        ]
+    },
+    {
+        "id": "5137fcd7.171ae3",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "Input",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 390,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "d66dfcc3.137e6c",
+        "type": "function",
+        "z": "1f88922b.593dce",
+        "name": "insert",
+        "func": "var TB_NAME = msg.payloadBak.TB_NAME;\nvar keys = \"\";\nvar values = \"\";\nvar obj = msg.payloadBak.record;\nvar lastKey = Object.keys(obj).pop();\n\nfor(var key in obj) {\n    \n//    if (key == \"id\") {\n//        continue;\n//    }\n    \n    var value = obj[key];\n\n    switch (typeof value) {\n        case \"string\":\n            if (value != 'null') {\n                value = value.replace(/'/g, \"''\");\n                keys = keys + key;\n                values += \"'\" + value + \"'\";\n            } else {\n                keys = keys + key;\n                values = values + value;\n            }\n            break;\n        case \"number\":\n            keys = keys + key ;\n            values = values + value ;\n            break;\n        default:\n            keys = keys + key;\n            values = values  + value ;\n            break;\n    }\n\n    if (key != lastKey) {\n        keys = keys + \",\";\n        values = values + \",\";\n    }\n}\nvar sql = \"INSERT INTO [dbo].[\"+TB_NAME+\"] (\"+keys+\") VALUES (\"+values+\");\";\n//node.warn(sql1 + sql2);\nmsg.query=sql;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 580,
+        "wires": [
+            [
+                "fb318478.d71b50",
+                "20ff327d.af1d37"
+            ]
+        ]
+    },
+    {
+        "id": "fb318478.d71b50",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "sqlCmd",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1060,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "00ac3844.ef02b4",
+        "type": "switch",
+        "z": "1f88922b.593dce",
+        "name": "checkEvent",
+        "property": "payload.eventName",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "user_addressesDelete",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "user_addressesCreate",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "user_addressesInitialize",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "user_addressesUpdate",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 4,
+        "x": 590,
+        "y": 580,
+        "wires": [
+            [
+                "f1750483.3338ae"
+            ],
+            [
+                "d66dfcc3.137e6c"
+            ],
+            [
+                "d66dfcc3.137e6c"
+            ],
+            [
+                "b87fe367.7851fa"
+            ]
+        ]
+    },
+    {
+        "id": "f1750483.3338ae",
+        "type": "function",
+        "z": "1f88922b.593dce",
+        "name": "delete",
+        "func": "var TB_NAME = msg.payloadBak.TB_NAME;\n\n// Extract the PK object\nconst columnValues = msg.payloadBak.record;\nconst pkArray = msg.payloadBak.PK.split(',');\n\n// Initialize an array to store the conditions\nconst conditions = [];\n\n// Loop through keys in the PK array\nfor (const columnName of pkArray) {\n  // Get the corresponding value from the columnValues object\n  const columnValue = columnValues[columnName];\n  \n  // Add the condition to the array\n  conditions.push(`${columnName} = '${columnValue}'`);\n}\n\n// Join the conditions with \"AND\" to create the WHERE clause\nconst whereClause = conditions.join(\" AND \");\n\n// Use 'whereClause' in SQL statement\nconst sqlStatement = `DELETE FROM ${TB_NAME} WHERE ${whereClause}`;\n\nmsg.query=sqlStatement;\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 540,
+        "wires": [
+            [
+                "fb318478.d71b50",
+                "20ff327d.af1d37"
+            ]
+        ]
+    },
+    {
+        "id": "20ff327d.af1d37",
+        "type": "MSSQL Execute",
+        "z": "1f88922b.593dce",
+        "name": "TargetDB",
+        "connection": "b56bef5a.61be",
+        "querySource": "dynamic",
+        "command": "",
+        "outputPropType": "msg",
+        "outputProp": "payload",
+        "x": 1060,
+        "y": 580,
+        "wires": [
+            [
+                "b5b40e6e.8db2cb",
+                "c9b31f3f.d50c07"
+            ]
+        ]
+    },
+    {
+        "id": "b5b40e6e.8db2cb",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "sqlResult",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1300,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "b87fe367.7851fa",
+        "type": "function",
+        "z": "1f88922b.593dce",
+        "name": "update",
+        "func": "var TB_NAME = msg.payloadBak.TB_NAME;\nvar params = \"\";\nvar keys = \"\";\nvar obj = msg.payloadBak.record;\nvar lastKey = Object.keys(obj).pop();\n\nfor(var key in obj) {\n    \n//    if (key == \"id\") {\n//        continue;\n//    }\n    \n    var value = obj[key];\n\n    switch (typeof value) {\n        case \"string\":\n            if (value != 'null') {\n                params = params + key + \"='\" + value.replace(\"'\",\"\") + \"'\";\n            } else {\n                params = params + key + \"=\" + value;\n            }\n            \n            break;\n        case \"number\":\n            params = params + key + \"=\"  + value ;\n            break;\n        default:\n            params = params + key + \"=\" + value;\n            break;\n    }\n    if (params.slice(-1) != \",\" && key != lastKey){\n        params=params + \",\";\n        \n    }\n}\n\n// Extract the PK object\nconst columnValues = msg.payloadBak.record;\nconst pkArray = msg.payloadBak.PK.split(',');\n\n// Initialize an array to store the conditions\nconst conditions = [];\n\n// Loop through keys in the PK array\nfor (const columnName of pkArray) {\n  // Get the corresponding value from the columnValues object\n  const columnValue = columnValues[columnName];\n  \n  // Add the condition to the array\n  conditions.push(`${columnName} = '${columnValue}'`);\n}\n\n// Join the conditions with \"AND\" to create the WHERE clause\nconst whereClause = conditions.join(\" AND \");\n\n\n// Use 'whereClause' in SQL statement\nconst sqlStatement = `UPDATE [dbo].[${TB_NAME}] SET ${params} WHERE ${whereClause}`;\n\nmsg.query=sqlStatement;\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 620,
+        "wires": [
+            [
+                "fb318478.d71b50",
+                "20ff327d.af1d37"
+            ]
+        ]
+    },
+    {
+        "id": "108de173.5200e4",
+        "type": "comment",
+        "z": "1f88922b.593dce",
+        "name": "CDC from user_addresses",
+        "info": "",
+        "x": 200,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "165141ff.3adbb6",
+        "type": "comment",
+        "z": "1f88922b.593dce",
+        "name": "Sync to Target",
+        "info": "",
+        "x": 1090,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "1e9fc1d0.c97933",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "Result",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1490,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "c9b31f3f.d50c07",
+        "type": "switch",
+        "z": "1f88922b.593dce",
+        "name": "",
+        "property": "error",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "null"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1290,
+        "y": 580,
+        "wires": [
+            [
+                "1e9fc1d0.c97933",
+                "47c146e7.e3ecfa"
+            ],
+            [
+                "37de2e45.210f07"
+            ]
+        ]
+    },
+    {
+        "id": "37de2e45.210f07",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "errMsg",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1500,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "ce8022d8.52f476",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "chkPre",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 580,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "47c146e7.e3ecfa",
+        "type": "change",
+        "z": "1f88922b.593dce",
+        "name": "restoreInfo",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "{}",
+                "tot": "json"
+            },
+            {
+                "t": "set",
+                "p": "payload.seq",
+                "pt": "msg",
+                "to": "payloadBak.seq",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload._msgid",
+                "pt": "msg",
+                "to": "_msgid",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload.query",
+                "pt": "msg",
+                "to": "query",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1510,
+        "y": 560,
+        "wires": [
+            [
+                "ec021bcb.8f6927",
+                "eb92f292.1e9c10"
+            ]
+        ]
+    },
+    {
+        "id": "ec021bcb.8f6927",
+        "type": "debug",
+        "z": "1f88922b.593dce",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1750,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "eb92f292.1e9c10",
+        "type": "file",
+        "z": "1f88922b.593dce",
+        "d": true,
+        "name": "",
+        "filename": "/tmp/output.log",
+        "appendNewline": true,
+        "createDir": false,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 1780,
+        "y": 560,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "f34264ba.7405fa",
+        "type": "change",
+        "z": "1f88922b.593dce",
+        "name": "prepare",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payloadBak",
+                "pt": "msg",
+                "to": "payload",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payloadBak.TB_NAME",
+                "pt": "msg",
+                "to": "payload.table",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payloadBak.PK",
+                "pt": "msg",
+                "to": "id",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "payload.record.created_at",
+                "pt": "msg",
+                "to": "$replace($string(payload.record.created_at),'\"','')",
+                "tot": "jsonata"
+            },
+            {
+                "t": "set",
+                "p": "payload.record.updated_at",
+                "pt": "msg",
+                "to": "$replace($string(payload.record.updated_at),'\"','')",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 400,
+        "y": 580,
+        "wires": [
+            [
+                "00ac3844.ef02b4",
+                "ce8022d8.52f476"
+            ]
+        ]
+    }
+]
