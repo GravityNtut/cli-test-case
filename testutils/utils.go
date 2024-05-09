@@ -101,16 +101,25 @@ func (testUtils *TestUtils) ProcessString(str string) string {
 	return completeString
 }
 
-func (testUtils *TestUtils) AssertStringEqual(actual string, expected string) {
+func (testUtils *TestUtils) AssertStringEqual(actual string, expected string) error {
 	if expected != actual {
-		log.Fatalf("\nExpect: %s\nActual: %s\n", expected, actual)
+		return fmt.Errorf("expect: %s actual: %s", expected, actual)
 	}
+	return nil
 }
 
-func (testUtils *TestUtils) AssertIntEqual(actual int, expected int) {
+func (testUtils *TestUtils) AssertIntEqual(actual int, expected int) error {
 	if expected != actual {
-		log.Fatalf("\nExpect: %d\nActual: %d\n", expected, actual)
+		return fmt.Errorf("expect: %d actual: %d", expected, actual)
 	}
+	return nil
+}
+
+func (testUtils *TestUtils) AssertUIntEqual(actual uint64, expected uint64) error {
+	if expected != actual {
+		return fmt.Errorf("expect: %d actual: %d", expected, actual)
+	}
+	return nil
 }
 
 func (testUtils *TestUtils) ValidateField(actual, expected string) error {

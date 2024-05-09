@@ -11,6 +11,7 @@ Given 已開啟服務 dispatcher
     When 訂閱data product "'<ProductName>'" 使用參數 "'<SubName>'" "'<Partitions>'" "'<Seq>'"
     # Then 顯示資料
     Then Cli 回傳 "'<Partitions>'" 內 "'<Seq>'" 後所有事件資料
+    # TODO 目前Partitions無法知道規則，故無法確認是否有收到資料
     Examples:
     |  ID  | ProductName | SubName    |   Partitions   |      Seq      |
     | M(1) |   drink     |   test     |      -1        |       1       |
@@ -25,7 +26,7 @@ Given 已開啟服務 dispatcher
     | M(10)|   drink     |   test     |   [ignore]     |       1       |
     | M(11)|   drink     |   test     |   2147483648   |       1       |
     | M(12)|   drink     |   test     |   -2147483648  |       1       |
-    | M(12)|   drink     |   test     |      -1        |   4294967296  |
+    | M(13)|   drink     |   test     |      -1        |   4294967296  |
     | M(14)|   drink     |   test     |      -1        |    [ignore]   |
 
 #Scenario

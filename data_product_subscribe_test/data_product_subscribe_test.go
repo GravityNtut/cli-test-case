@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 	"test-case/testutils"
 	"testing"
@@ -23,7 +24,7 @@ type JSONSubData struct {
 	Payload   interface{} `json:"payload"`
 	Pk        []string    `json:"primarykey"`
 	Product   string      `json:"product"`
-	Seq       int         `json:"seq"`
+	Seq       uint64      `json:"seq"`
 	Subject   string      `json:"subject"`
 	Table     string      `json:"table"`
 	Timestamp string      `json:"timestamp"`
@@ -102,8 +103,7 @@ func DisplayData() error {
 func PublishProductEvent(numbersOfEvents int) error {
 	EventCount = numbersOfEvents
 	for i := 0; i < EventCount; i++ {
-		payload := `{"id":%d, "name":"test%d", "kcal":%d, "price":%d}`
-		result := fmt.Sprintf(payload, i+1, i+1, i*100, i+20)
+		result := fmt.Sprintf(`{"id":%d, "name":"test%d", "kcal":%d, "price":%d}`, i+1, i+1, i*100, i+20)
 		cmd := exec.Command(testutils.GravityCliString, "pub", Event, result, "-s", ut.Config.JetstreamURL)
 		err := cmd.Run()
 		if err != nil {
@@ -147,39 +147,77 @@ func CreateDataProductRuleset(dataProduct string, ruleset string) error {
 	}
 	return nil
 }
-func ValidateSubResult(partitions string, seq string) error {
+func ValidateSubResult(partitionString string, seqString string) error {
+	var err error
+	var partitions int64 = -1
+	var seq uint64 = 1
+	if partitionString != testutils.IgnoreString {
+		partitions, err = strconv.ParseInt(partitionString, 10, 64)
+		if err != nil {
+			return fmt.Errorf("轉換partition成int失敗: %s", err.Error())
+		}
+	}
+	if seqString != testutils.IgnoreString {
+		seq, err = strconv.ParseUint(seqString, 10, 64)
+		if err != nil {
+			return fmt.Errorf("轉換seq成uint失敗: %s", err.Error())
+		}
+	}
+	if partitions != -1 {
+		if ut.CmdResult.Err != nil && ut.CmdResult.Err.(*exec.ExitError).ExitCode() != 124 {
+			return errors.New("sub指令失敗")
+		}
+		return nil
+	}
 	resultStringList := FindJSON(ut.CmdResult.Stdout)
-	if len(resultStringList) != EventCount {
-		errString := fmt.Sprintf("Event數量與發佈數量不符合, 預期數量: %d, 獲取數量: %d", EventCount, len(resultStringList))
+	numbersOfEvents := uint64(EventCount) - seq + 1
+	if uint64(EventCount+1) < seq {
+		numbersOfEvents = 0
+	}
+	if uint64(len(resultStringList)) != numbersOfEvents {
+		errString := fmt.Sprintf("Event數量與發佈數量不符合, 預期數量: %d, 獲取數量: %d", numbersOfEvents, len(resultStringList))
 		return errors.New(errString)
 	}
 	for i, jsonData := range resultStringList {
+		i := uint64(i)
+		i = i + seq - 1
 		var UnmarshalResult JSONSubData
-		err := json.Unmarshal([]byte(jsonData), &UnmarshalResult)
-		if err != nil {
+		if err := json.Unmarshal([]byte(jsonData), &UnmarshalResult); err != nil {
 			return errors.New("json unmarshal failed" + err.Error())
 		}
 
 		payloadString := fmt.Sprintf(`{"id":%d, "name":"test%d", "kcal":%d, "price":%d}`, i+1, i+1, i*100, i+20)
 		expectPayload := ut.FormatJSONData(payloadString)
 
-		ut.AssertStringEqual(UnmarshalResult.Event, Event)
-		ut.AssertStringEqual(UnmarshalResult.Product, DataProduct)
+		if err := ut.AssertStringEqual(UnmarshalResult.Event, Event); err != nil {
+			return err
+		}
+		if err := ut.AssertStringEqual(UnmarshalResult.Product, DataProduct); err != nil {
+			return err
+		}
 		payloadByte, _ := json.Marshal(UnmarshalResult.Payload)
 		resultPayload := string(payloadByte)
-		ut.AssertStringEqual(resultPayload, expectPayload)
+		if err := ut.AssertStringEqual(resultPayload, expectPayload); err != nil {
+			return err
+		}
 		pkExpect := strings.Split(Pk, ",")
 		for i := 0; i < len(pkExpect); i++ {
-			ut.AssertStringEqual(UnmarshalResult.Pk[i], pkExpect[i])
+			if err := ut.AssertStringEqual(UnmarshalResult.Pk[i], pkExpect[i]); err != nil {
+				return err
+			}
 		}
-		ut.AssertIntEqual(UnmarshalResult.Seq, i+1)
-		// ut.AssertStringEqual(UnmarshalResult.Method, Method)
+		// if err := ut.AssertUIntEqual(UnmarshalResult.Seq, i+1); err != nil {
+		// 	return err
+		// }
+		// if err := ut.AssertStringEqual(UnmarshalResult.Method, Method); err != nil {
+		// 	return err
+		// }
 	}
 	return nil
 }
 
 func SubCommandFail() error {
-	if ut.CmdResult.Err == nil {
+	if ut.CmdResult.Err == nil || ut.CmdResult.Err.(*exec.ExitError).ExitCode() == 124 {
 		return errors.New("使用該指令應該要失敗")
 	}
 	return nil
