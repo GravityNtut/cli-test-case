@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"regexp"
 	"test-case/testutils"
 	"testing"
 
@@ -46,12 +47,20 @@ func CreateDataProductRuleset(dataProduct string, ruleset string, RSMethod strin
 		return errors.New("Enable 必須要[true] 或 [false]")
 	}
 	cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--event", event, "--method", RSMethod, "--pk", RSPk, "--handler", RSHandler, "--schema", RSSchema, "--enabled="+RSEnabled, "-s", ut.Config.JetstreamURL)
-	fmt.Println(cmd)
 	err := cmd.Run()
 	if err != nil {
 		return errors.New("data product add ruleset failed")
 	}
 	return nil
+}
+
+func GeneratePayloadWithLargeNum(number int) string {
+	var payload string
+	for i := 0; i < number; i++ {
+		payload += "a"
+	}
+	result := fmt.Sprintf(`{"id":1, "name":"%s", "kcal":1000, "price":100}`, payload)
+	return result
 }
 
 func PublishEventCommand(event string, payload string) error {
@@ -69,6 +78,8 @@ type JSONData struct {
 }
 
 func QueryJetstreamEventExist(event string, payload string) error {
+	// 移除最外邊的單引號
+	payload = regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payload)[1]
 	payload = ut.ProcessString(payload)
 	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
@@ -77,21 +88,42 @@ func QueryJetstreamEventExist(event string, payload string) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	ch := make(chan *nats.Msg, 9)
+	ch := make(chan *nats.Msg, 1)
 	js.ChanSubscribe("$GVT.default.EVENT.*", ch)
-	for i := 0; i < 9; i++ {
-		m := <-ch
-		fmt.Println("Received Num: ", i)
-		var jsonData JSONData
-		err := json.Unmarshal(m.Data, &jsonData)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println("Event: ", jsonData.Event)
-		result, _ := Base64ToString(jsonData.Payload)
-		fmt.Println("Payload: ", result)
+
+	m := <-ch
+	var jsonData JSONData
+	if err := json.Unmarshal(m.Data, &jsonData); err != nil {
+		return fmt.Errorf("json unmarshal failed: %v", err)
+	}
+	fmt.Println("Event: ", jsonData.Event)
+	result, _ := Base64ToString(jsonData.Payload)
+	fmt.Println("Payload: ", result)
+
+	if jsonData.Event != event {
+		return fmt.Errorf("預期的event: %s, 實際的event: %s", event, jsonData.Event)
+	}
+	if result != payload {
+		return fmt.Errorf("預期的payload: %s, 實際的payload: %s", payload, result)
+	}
+	return nil
+}
+
+func CheckDPStreamDPNotExist(dataProduct string) error {
+	const EventCount = 1
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
+	defer nc.Close()
+
+	js, err := nc.JetStream()
+	if err != nil {
+		log.Fatal(err)
 	}
 
+	ch := make(chan *nats.Msg, EventCount)
+	js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
+	if len(ch) != 0 {
+		return fmt.Errorf("預期不會進到GVT_default_DP裡，但是進了")
+	}
 	return nil
 }
 
@@ -113,7 +145,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
 	ctx.Given(`^創建 data product "'(.*?)'" 使用參數 "'(.*?)'"$`, ut.CreateDataProduct)
 	ctx.Given(`^"'(.*?)'" 創建 ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
-	// ctx.When(`^publish Event "'(.*?)'" 使用參數 "'(.*?)'"$`, PublishEventCommand)
-	// ctx.Then(`^使用 SDK 查詢 GVT_default_DP_drink 裡沒有 "'(.*?)'" 帶有 "'(.*?)'"$`)
+	ctx.When(`^publish Event "'(.*?)'" 使用參數 "'(.*?)'"$`, PublishEventCommand)
+	ctx.Then(`^查詢 GVT_default_DP_drink 裡沒有 "'(.*?)'" 帶有 "'(.*?)'"$`, CheckDPStreamDPNotExist)
 	ctx.Then(`^使用 nats jetstream 查詢 GVT_default "'(.*?)'" 帶有 "'(.*?)'"$`, QueryJetstreamEventExist)
 }
