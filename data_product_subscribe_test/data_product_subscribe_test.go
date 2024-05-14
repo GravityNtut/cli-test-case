@@ -69,7 +69,7 @@ func FindJSON(data string) []string {
 	return result
 }
 
-func SubscribeDataProductCommand(productName string, subName string, partitions string, seq string) error {
+func SubscribeDataProductCommand(productName string, _ string, partitions string, seq string) error {
 	productName = ut.ProcessString(productName)
 	cmdString := "timeout 1 ../gravity-cli product sub "
 	if productName != testutils.NullString {

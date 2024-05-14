@@ -213,12 +213,13 @@ func (testUtils *TestUtils) ClearDataProducts() {
 		}
 		productName := parts[1]
 		cmd := exec.Command(GravityCliString, "product", "delete", productName, "-s", testUtils.Config.JetstreamURL)
-		err = cmd.Run()
-		if err != nil {
+		if err := cmd.Run(); err != nil {
 			log.Fatalf(err.Error())
 		}
 	}
-	js.PurgeStream("GVT_default")
+	if err := js.PurgeStream("GVT_default"); err != nil {
+		log.Fatalf(err.Error())
+	}
 }
 
 func (testUtils *TestUtils) RestartDocker() {
