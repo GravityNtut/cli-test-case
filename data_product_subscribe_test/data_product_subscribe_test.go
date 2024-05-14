@@ -164,7 +164,7 @@ func ValidateSubResult(partitionString string, seqString string) error {
 	}
 	resultStringList := FindJSON(ut.CmdResult.Stdout)
 	numbersOfEvents := uint64(EventCount) - seq + 1
-	if uint64(EventCount+1) < seq {
+	if uint64(EventCount) < seq {
 		numbersOfEvents = 0
 	}
 
@@ -261,5 +261,4 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.When(`^訂閱data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'"`, SubscribeDataProductCommand)
 	ctx.Then(`^Cli 回傳 "'(.*?)'" 內 "'(.*?)'" 後所有事件資料$`, ValidateSubResult)
 	ctx.Then(`^Cli 回傳指令失敗$`, SubCommandFail)
-	ctx.Then(`^顯示資料`, DisplayData)
 }
