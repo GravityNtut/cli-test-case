@@ -218,6 +218,7 @@ func (testUtils *TestUtils) ClearDataProducts() {
 			log.Fatalf(err.Error())
 		}
 	}
+	js.PurgeStream("GVT_default")
 }
 
 func (testUtils *TestUtils) RestartDocker() {

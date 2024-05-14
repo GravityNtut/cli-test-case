@@ -16,16 +16,17 @@ Given 已開啟服務 dispatcher
     |  ID  | ProductName | SubName |   Partitions   |      Seq      |
     | M(1) |   drink     |         |      -1        |       1       |
     | M(2) |   drink     |         |      0         |       1       |
-    | M(3) |   drink     |         |      99        |       1       |
+    | M(3) |   drink     |         |      200       |       1       |
     | M(4) |   drink     |         |  2147483647    |       1       |
     | M(5) |   drink     |         |  -2147483647   |       1       |
     | M(6) |   drink     |         |    [ignore]    |       1       |
     | M(7) |   drink     |         |   2147483648   |       1       |
     | M(8) |   drink     |         |  -2147483648   |       1       |
-    | M(9) |   drink     |         |      -1        |   4294967295  |
-    | M(10)|   drink     |         |      -1        |    [ignore]   |
-    | M(11)|   drink     |         |      -1        |   4294967296  |
-    | M(12)|   drink     |         |      -1        |       5       |
+    | M(9) |   drink     |         |    131,200     |       1       |
+    | M(10) |   drink     |         |      -1        |   4294967295  |
+    | M(11)|   drink     |         |      -1        |    [ignore]   |
+    | M(12)|   drink     |         |      -1        |   4294967296  |
+    | M(13)|   drink     |         |      -1        |       5       |
 
 #Scenario
 	Scenario: 使用product sub指令來接收已publish到該data product的所有資料失敗情境

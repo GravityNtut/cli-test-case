@@ -71,14 +71,10 @@ func FindJSON(data string) []string {
 
 func SubscribeDataProductCommand(productName string, subName string, partitions string, seq string) error {
 	productName = ut.ProcessString(productName)
-	subName = ut.ProcessString(subName)
 	cmdString := "timeout 1 ../gravity-cli product sub "
 	if productName != testutils.NullString {
 		cmdString += productName + " "
 	}
-	// if subName != testutils.IgnoreString {
-	// 	cmdString += "--name " + subName + " "
-	// }
 	if partitions != testutils.IgnoreString {
 		cmdString += "--partitions " + partitions + " "
 	}
@@ -103,11 +99,20 @@ func DisplayData() error {
 func PublishProductEvent(numbersOfEvents int) error {
 	EventCount = numbersOfEvents
 	for i := 0; i < EventCount; i++ {
-		result := fmt.Sprintf(`{"id":%d, "name":"test%d", "kcal":%d, "price":%d}`, i+1, i+1, i*100, i+20)
+		if i >= EventCount-3 {
+			// 生成id為99的事件
+			result := fmt.Sprintf(`{"id":99, "name":"test%d", "kcal":%d, "price":%d}`, i+1, i*300, i+30)
+			cmd := exec.Command(testutils.GravityCliString, "pub", Event, result, "-s", ut.Config.JetstreamURL)
+			if err := cmd.Run(); err != nil {
+				return fmt.Errorf("publish event failed: %s", err.Error())
+			}
+			continue
+		}
+		// 生成id為87的事件
+		result := fmt.Sprintf(`{"id":87, "name":"test%d", "kcal":%d, "price":%d}`, i+1, i*100, i+20)
 		cmd := exec.Command(testutils.GravityCliString, "pub", Event, result, "-s", ut.Config.JetstreamURL)
-		err := cmd.Run()
-		if err != nil {
-			return err
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("publish event failed: %s", err.Error())
 		}
 	}
 	return nil
@@ -128,9 +133,10 @@ func CreateDataProduct(dataProduct string) error {
 var DataProduct string
 var Ruleset string
 var Event string
+var ExpectPartition []string
 
 const Method string = "create"
-const Pk string = "id,name"
+const Pk string = "id"
 const RulesetDesc string = "drink創建事件"
 const Handler string = "./assets/handler.js"
 const Schema string = "./assets/schema.json"
@@ -147,46 +153,64 @@ func CreateDataProductRuleset(dataProduct string, ruleset string) error {
 	}
 	return nil
 }
+
 func ValidateSubResult(partitionString string, seqString string) error {
 	var err error
-	var partitions int64 = -1
 	var seq uint64 = 1
-	if partitionString != testutils.IgnoreString {
-		partitions, err = strconv.ParseInt(partitionString, 10, 64)
-		if err != nil {
-			return fmt.Errorf("轉換partition成int失敗: %s", err.Error())
-		}
-	}
 	if seqString != testutils.IgnoreString {
 		seq, err = strconv.ParseUint(seqString, 10, 64)
 		if err != nil {
 			return fmt.Errorf("轉換seq成uint失敗: %s", err.Error())
 		}
 	}
-	if partitions != -1 {
-		if ut.CmdResult.Err != nil && ut.CmdResult.Err.(*exec.ExitError).ExitCode() != 124 {
-			return errors.New("sub指令失敗")
-		}
-		return nil
-	}
 	resultStringList := FindJSON(ut.CmdResult.Stdout)
 	numbersOfEvents := uint64(EventCount) - seq + 1
 	if uint64(EventCount+1) < seq {
 		numbersOfEvents = 0
 	}
+
+	if partitionString == "131" {
+		if numbersOfEvents > 3 {
+			numbersOfEvents -= 3
+		} else {
+			numbersOfEvents = 0
+		}
+	} else if partitionString == "200" {
+		if numbersOfEvents > 3 {
+			numbersOfEvents = 3
+		}
+	} else if partitionString != "131,200" && partitionString != "-1" && partitionString != testutils.IgnoreString {
+		numbersOfEvents = 0
+	}
+
 	if uint64(len(resultStringList)) != numbersOfEvents {
 		errString := fmt.Sprintf("Event數量與發佈數量不符合, 預期數量: %d, 獲取數量: %d", numbersOfEvents, len(resultStringList))
 		return errors.New(errString)
 	}
 	for i, jsonData := range resultStringList {
 		i := uint64(i)
-		i = i + seq - 1
+
+		if partitionString == "200" {
+			if seq < 7 {
+				i = 7 + i
+			} else {
+				i = i + seq - 1
+			}
+		} else {
+			i = i + seq - 1
+		}
+
 		var UnmarshalResult JSONSubData
 		if err := json.Unmarshal([]byte(jsonData), &UnmarshalResult); err != nil {
 			return errors.New("json unmarshal failed" + err.Error())
 		}
 
-		payloadString := fmt.Sprintf(`{"id":%d, "name":"test%d", "kcal":%d, "price":%d}`, i+1, i+1, i*100, i+20)
+		var payloadString string
+		if i >= uint64(EventCount)-3 {
+			payloadString = fmt.Sprintf(`{"id":99, "name":"test%d", "kcal":%d, "price":%d}`, i+1, i*300, i+30)
+		} else {
+			payloadString = fmt.Sprintf(`{"id":87, "name":"test%d", "kcal":%d, "price":%d}`, i+1, i*100, i+20)
+		}
 		expectPayload := ut.FormatJSONData(payloadString)
 
 		if err := ut.AssertStringEqual(UnmarshalResult.Event, Event); err != nil {
@@ -206,12 +230,13 @@ func ValidateSubResult(partitionString string, seqString string) error {
 				return err
 			}
 		}
+		// 功能要修改，暫時先不測
 		// if err := ut.AssertUIntEqual(UnmarshalResult.Seq, i+1); err != nil {
 		// 	return err
 		// }
-		// if err := ut.AssertStringEqual(UnmarshalResult.Method, Method); err != nil {
-		// 	return err
-		// }
+		if err := ut.AssertStringEqual(UnmarshalResult.Method, Method); err != nil {
+			return err
+		}
 	}
 	return nil
 }
