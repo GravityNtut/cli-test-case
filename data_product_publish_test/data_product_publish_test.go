@@ -1,6 +1,7 @@
 package dataproductpublish
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -135,6 +136,32 @@ func Base64ToString(base64Str string) (string, error) {
 	return string(decodedBytes), nil
 }
 
+func UpdateDataProductCommand(dataProduct string) error {
+	cmd := exec.Command(testutils.GravityCliString, "product", "update", dataProduct, "--enabled=true", "-s", ut.Config.JetstreamURL)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	fmt.Println(stderr.String())
+	if err != nil {
+		return errors.New("data product update failed")
+	}
+	return nil
+}
+
+func UpdateRulesetCommand(dataProduct string, ruleset string) error {
+	cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "update", dataProduct, ruleset, "--enabled=true", "-s", ut.Config.JetstreamURL)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	
+	err := cmd.Run()
+	fmt.Println(stderr.String())
+	if err != nil {
+		return errors.New("ruleset update failed")
+	}
+	return nil
+}
+
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
@@ -148,4 +175,9 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.When(`^publish Event "'(.*?)'" 使用參數 "'(.*?)'"$`, PublishEventCommand)
 	ctx.Then(`^查詢 GVT_default_DP_drink 裡沒有 "'(.*?)'" 帶有 "'(.*?)'"$`, CheckDPStreamDPNotExist)
 	ctx.Then(`^使用 nats jetstream 查詢 GVT_default "'(.*?)'" 帶有 "'(.*?)'"$`, QueryJetstreamEventExist)
+	ctx.When(`^更新 data product "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateDataProductCommand)
+	ctx.When(`^更新 data product "'([^'"]*?)'" 的 ruleset "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateRulesetCommand)
+	// ctx.When(`^publish Event "'(.*?)'" 使用參數 "'(.*?)'"$`, PublishEventCommand)
+	// ctx.Then(`^使用 SDK 查詢 GVT_default_DP_drink 裡沒有 "'(.*?)'" 帶有 "'(.*?)'"$`)
+	//ctx.Then(`^使用 nats jetstream 查詢 GVT_default "'(.*?)'" 帶有 "'(.*?)'"$`, QueryJetstreamEventExist)
 }
