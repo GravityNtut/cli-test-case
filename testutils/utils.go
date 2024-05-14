@@ -217,8 +217,12 @@ func (testUtils *TestUtils) ClearDataProducts() {
 			log.Fatalf(err.Error())
 		}
 	}
-	if err := js.PurgeStream("GVT_default"); err != nil {
-		log.Fatalf(err.Error())
+	for stringName := range streams {
+		if stringName == "GVT_default" {
+			if err := js.PurgeStream(stringName); err != nil {
+				log.Fatalf(err.Error())
+			}
+		}
 	}
 }
 
