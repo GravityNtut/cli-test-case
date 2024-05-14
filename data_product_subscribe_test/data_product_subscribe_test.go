@@ -96,20 +96,19 @@ func DisplayData() error {
 	return nil
 }
 
-func PublishProductEvent(numbersOfEvents int) error {
-	EventCount = numbersOfEvents
-	for i := 0; i < EventCount; i++ {
-		if i >= EventCount-3 {
-			// 生成id為99的事件
-			result := fmt.Sprintf(`{"id":99, "name":"test%d", "kcal":%d, "price":%d}`, i+1, i*300, i+30)
-			cmd := exec.Command(testutils.GravityCliString, "pub", Event, result, "-s", ut.Config.JetstreamURL)
-			if err := cmd.Run(); err != nil {
-				return fmt.Errorf("publish event failed: %s", err.Error())
-			}
-			continue
+func PublishProductEvent() error {
+	EventCount = 10
+	// 生成7筆id為87的事件
+	for i := 1; i <= EventCount-3; i++ {
+		result := fmt.Sprintf(`{"id":87, "name":"test%d", "kcal":%d, "price":%d}`, i, i*100, i+20)
+		cmd := exec.Command(testutils.GravityCliString, "pub", Event, result, "-s", ut.Config.JetstreamURL)
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("publish event failed: %s", err.Error())
 		}
-		// 生成id為87的事件
-		result := fmt.Sprintf(`{"id":87, "name":"test%d", "kcal":%d, "price":%d}`, i+1, i*100, i+20)
+	}
+	// 生成3筆id為99的事件
+	for i := EventCount - 2; i <= EventCount; i++ {
+		result := fmt.Sprintf(`{"id":99, "name":"test%d", "kcal":%d, "price":%d}`, i, i*300, i+30)
 		cmd := exec.Command(testutils.GravityCliString, "pub", Event, result, "-s", ut.Config.JetstreamURL)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("publish event failed: %s", err.Error())
@@ -191,13 +190,13 @@ func ValidateSubResult(partitionString string, seqString string) error {
 		i := uint64(i)
 
 		if partitionString == "200" {
-			if seq < 7 {
-				i = 7 + i
+			if seq < 8 {
+				i = 8 + i
 			} else {
-				i = i + seq - 1
+				i = i + seq
 			}
 		} else {
-			i = i + seq - 1
+			i = i + seq
 		}
 
 		var UnmarshalResult JSONSubData
@@ -207,9 +206,9 @@ func ValidateSubResult(partitionString string, seqString string) error {
 
 		var payloadString string
 		if i >= uint64(EventCount)-3 {
-			payloadString = fmt.Sprintf(`{"id":99, "name":"test%d", "kcal":%d, "price":%d}`, i+1, i*300, i+30)
+			payloadString = fmt.Sprintf(`{"id":99, "name":"test%d", "kcal":%d, "price":%d}`, i, i*300, i+30)
 		} else {
-			payloadString = fmt.Sprintf(`{"id":87, "name":"test%d", "kcal":%d, "price":%d}`, i+1, i*100, i+20)
+			payloadString = fmt.Sprintf(`{"id":87, "name":"test%d", "kcal":%d, "price":%d}`, i, i*100, i+20)
 		}
 		expectPayload := ut.FormatJSONData(payloadString)
 
@@ -258,7 +257,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
 	ctx.Given(`^已有 data product "'(.*?)'"$`, CreateDataProduct)
 	ctx.Given(`^已有 data product 的 ruleset "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
-	ctx.Given(`^已 publish "'(.*?)'" 筆 Event$`, PublishProductEvent)
+	ctx.Given(`^已 publish 10 筆 Event$`, PublishProductEvent)
 	ctx.When(`^訂閱data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'"`, SubscribeDataProductCommand)
 	ctx.Then(`^Cli 回傳 "'(.*?)'" 內 "'(.*?)'" 後所有事件資料$`, ValidateSubResult)
 	ctx.Then(`^Cli 回傳指令失敗$`, SubCommandFail)

@@ -7,11 +7,9 @@ Given 已開啟服務 dispatcher
 	Scenario: 使用product sub指令來接收已publish到該data product的所有資料成功情境
 	Given 已有 data product "'drink'"
     Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'"
-    Given 已 publish "'10'" 筆 Event
+    Given 已 publish 10 筆 Event
     When 訂閱data product "'<ProductName>'" 使用參數 "'<SubName>'" "'<Partitions>'" "'<Seq>'"
-    # Then 顯示資料
     Then Cli 回傳 "'<Partitions>'" 內 "'<Seq>'" 後所有事件資料
-    # TODO 目前Partitions無法知道規則，故無法確認是否有收到資料
     Examples:
     |  ID  | ProductName | SubName |   Partitions   |      Seq      |
     | M(1) |   drink     |         |      -1        |       1       |
@@ -23,7 +21,7 @@ Given 已開啟服務 dispatcher
     | M(7) |   drink     |         |   2147483648   |       1       |
     | M(8) |   drink     |         |  -2147483648   |       1       |
     | M(9) |   drink     |         |    131,200     |       1       |
-    | M(10) |   drink     |         |      -1        |   4294967295  |
+    | M(10) |   drink    |         |      -1        |   4294967295  |
     | M(11)|   drink     |         |      -1        |    [ignore]   |
     | M(12)|   drink     |         |      -1        |   4294967296  |
     | M(13)|   drink     |         |      -1        |       5       |
@@ -32,7 +30,7 @@ Given 已開啟服務 dispatcher
 	Scenario: 使用product sub指令來接收已publish到該data product的所有資料失敗情境
     Given 已有 data product "'drink'"
     Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'"
-    Given 已 publish "'1'" 筆 Event
+    Given 已 publish 10 筆 Event
     When 訂閱data product "'<ProductName>'" 使用參數 "'<SubName>'" "'<Partitions>'" "'<Seq>'"
     Then Cli 回傳指令失敗
     Examples:
