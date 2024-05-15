@@ -10,11 +10,14 @@ import (
 	"log"
 	"os/exec"
 	"regexp"
+	"strings"
 	"test-case/testutils"
 	"testing"
 
+	gravity_sdk_types_product_event "github.com/BrobridgeOrg/gravity-sdk/v2/types/product_event"
 	"github.com/cucumber/godog"
 	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/proto"
 )
 
 var ut = testutils.TestUtils{}
@@ -153,11 +156,52 @@ func UpdateRulesetCommand(dataProduct string, ruleset string) error {
 	cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "update", dataProduct, ruleset, "--enabled=true", "-s", ut.Config.JetstreamURL)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-	
+
 	err := cmd.Run()
 	fmt.Println(stderr.String())
 	if err != nil {
 		return errors.New("ruleset update failed")
+	}
+	return nil
+}
+
+func DisplayData(dataProduct string, event string, payload string) error {
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
+	defer nc.Close()
+
+	js, err := nc.JetStream()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var pe gravity_sdk_types_product_event.ProductEvent
+
+	ch := make(chan *nats.Msg, 1)
+	js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
+
+	msg := <-ch
+
+	err = proto.Unmarshal(msg.Data, &pe)
+	if err != nil {
+		fmt.Printf("Failed to parsing product event: %v", err)
+	}
+
+	r, err := pe.GetContent()
+	if err != nil {
+		fmt.Printf("Failed to parsing content: %v", err)
+	}
+	// fmt.Println(pe.EventName)
+	// fmt.Println(r.AsMap())
+
+	JSONByte, err := json.Marshal(r.AsMap())
+	if err != nil {
+		return fmt.Errorf("Recieve payload marshal fail %s", err.Error())
+	}
+	recieveJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
+	regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payload)[1]
+	regexPayload = ut.FormatJSONData(regexPayload)
+
+	if recieveJSONStringResult != regexPayload {
+		return errors.New("payload 資料不正確")
 	}
 	return nil
 }
@@ -173,11 +217,9 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^創建 data product "'(.*?)'" 使用參數 "'(.*?)'"$`, ut.CreateDataProduct)
 	ctx.Given(`^"'(.*?)'" 創建 ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
 	ctx.When(`^publish Event "'(.*?)'" 使用參數 "'(.*?)'"$`, PublishEventCommand)
-	ctx.Then(`^查詢 GVT_default_DP_drink 裡沒有 "'(.*?)'" 帶有 "'(.*?)'"$`, CheckDPStreamDPNotExist)
+	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡有 "'(.*?)'" 帶有 "'(.*?)'"$`, DisplayData)
 	ctx.Then(`^使用 nats jetstream 查詢 GVT_default "'(.*?)'" 帶有 "'(.*?)'"$`, QueryJetstreamEventExist)
 	ctx.When(`^更新 data product "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateDataProductCommand)
 	ctx.When(`^更新 data product "'([^'"]*?)'" 的 ruleset "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateRulesetCommand)
-	// ctx.When(`^publish Event "'(.*?)'" 使用參數 "'(.*?)'"$`, PublishEventCommand)
-	// ctx.Then(`^使用 SDK 查詢 GVT_default_DP_drink 裡沒有 "'(.*?)'" 帶有 "'(.*?)'"$`)
-	//ctx.Then(`^使用 nats jetstream 查詢 GVT_default "'(.*?)'" 帶有 "'(.*?)'"$`, QueryJetstreamEventExist)
+	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡沒有 "'(.*?)'" 帶有 "'(.*?)'"$`, DisplayData)
 }

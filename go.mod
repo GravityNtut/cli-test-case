@@ -5,9 +5,11 @@ go 1.21
 toolchain go1.21.3
 
 require (
+	github.com/BrobridgeOrg/gravity-sdk/v2 v2.0.7
 	github.com/cucumber/godog v0.13.0
 	github.com/docker/docker v25.0.3+incompatible
 	github.com/nats-io/nats.go v1.33.1
+	google.golang.org/protobuf v1.34.1
 )
 
 require (
@@ -41,7 +43,10 @@ require (
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-memdb v1.3.4 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/moby/term v0.5.0 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.24.0 // indirect

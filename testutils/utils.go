@@ -224,9 +224,6 @@ func (testUtils *TestUtils) ClearDataProducts() {
 			}
 		}
 	}
-	if err := js.PurgeStream("GVT_default"); err != nil {
-		log.Fatalf("清除GVT_default 錯誤: %v", err)
-	}
 }
 
 func (testUtils *TestUtils) RestartDocker() {
