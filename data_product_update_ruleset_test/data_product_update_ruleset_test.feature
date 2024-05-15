@@ -11,7 +11,7 @@ Given 已開啟服務 dispatcher
 	Then Cli 回傳更改成功
 	And 使用 nats jetstream查詢 "'drink'" 的 "'drinkCreated'" 參數更改成功 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
 	Examples:
-    |  ID  | ProductName | Ruleset       | Event         | Method    | 		Schema          | 		Handler_script	   | Pk       | Desc          | Enabled  | GivenEnabled |
+    |  ID  | ProductName | Ruleset       | Event         | Method    | 		Schema          | 		Handler_script	   | Pk       | Desc          | Enabled  | GivenRSEnabled |
 	| M(1) | drink       | drinkCreated  | drinkCreated  | create    | ./assets/schema.json |  ./assets/handler.js     | id       |  description  | [true]   |   [ignore]   |
 	| M(2) | drink       | drinkCreated  | drinkCreated  | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |   [ignore]   |
     #單獨update method會跳Error: Invalid method
