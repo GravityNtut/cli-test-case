@@ -10,7 +10,7 @@ Given 已開啟服務 dispatcher
 	Then Cli 回傳更改成功
 	And 使用 nats jetstream 查詢 "'drink'" 參數更改成功 "'<Description>'" "'<Schema>'" "'<Enabled>'"
 	Examples:
-	|  ID  | ProductName | Description  |		 Schema     	| Enabled   | GivenEnabled |
+	|  ID  | ProductName | Description  |		 Schema     	| Enabled   | GivenDPEnabled |
 	| M(1) | drink       | [ignore]     |		[ignore]   		| [ignore]  |   [false]    |
 	| M(2) | drink       | description  |		[ignore] 		| [ignore]  |   [false]    |
 	| M(3) | drink       | ""  			|		[ignore]   		| [ignore]  |   [false]    |
