@@ -101,6 +101,27 @@ func (testUtils *TestUtils) ProcessString(str string) string {
 	return completeString
 }
 
+func (testUtils *TestUtils) AssertStringEqual(actual string, expected string) error {
+	if expected != actual {
+		return fmt.Errorf("expect: %s actual: %s", expected, actual)
+	}
+	return nil
+}
+
+func (testUtils *TestUtils) AssertIntEqual(actual int, expected int) error {
+	if expected != actual {
+		return fmt.Errorf("expect: %d actual: %d", expected, actual)
+	}
+	return nil
+}
+
+func (testUtils *TestUtils) AssertUIntEqual(actual uint64, expected uint64) error {
+	if expected != actual {
+		return fmt.Errorf("expect: %d actual: %d", expected, actual)
+	}
+	return nil
+}
+
 func (testUtils *TestUtils) ValidateField(actual, expected string) error {
 	if expected != IgnoreString {
 		regex := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(expected)[1] //移除雙引號
@@ -151,18 +172,26 @@ func (testUtils *TestUtils) ValidateSchema(actual interface{}, expected string) 
 			return err
 		}
 		natsSchema, _ := json.Marshal(actual)
-		var fileJSON interface{}
-		err = json.Unmarshal(fileContent, &fileJSON)
-		if err != nil {
-			return err
-		}
-		fileSchemaByte, _ := json.Marshal(fileJSON)
-		fileSchema := strings.Join(strings.Fields(string(fileSchemaByte)), "")
+		fileSchema := testUtils.FormatJSONData(string(fileContent))
 		if fileSchema != string(natsSchema) {
 			return errors.New("schema與nats資訊")
 		}
 	}
 	return nil
+}
+
+func (testUtils *TestUtils) FormatJSONData(JSONData string) string {
+	var JSON interface{}
+	err := json.Unmarshal([]byte(JSONData), &JSON)
+	if err != nil {
+		log.Fatalf("%s Unmarshal Fail %s", JSONData, err.Error())
+	}
+	JSONByte, err := json.Marshal(JSON)
+	if err != nil {
+		log.Fatalf("%s Marshal Fail %s", JSONData, err.Error())
+	}
+	expectJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
+	return expectJSONStringResult
 }
 
 func (testUtils *TestUtils) ClearDataProducts() {
@@ -184,9 +213,15 @@ func (testUtils *TestUtils) ClearDataProducts() {
 		}
 		productName := parts[1]
 		cmd := exec.Command(GravityCliString, "product", "delete", productName, "-s", testUtils.Config.JetstreamURL)
-		err = cmd.Run()
-		if err != nil {
-			log.Fatal(err)
+		if err := cmd.Run(); err != nil {
+			log.Fatalf(err.Error())
+		}
+	}
+	for stringName := range streams {
+		if stringName == "GVT_default" {
+			if err := js.PurgeStream(stringName); err != nil {
+				log.Fatalf(err.Error())
+			}
 		}
 	}
 	if err := js.PurgeStream("GVT_default"); err != nil {
@@ -200,13 +235,13 @@ func (testUtils *TestUtils) RestartDocker() {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Fatal(err, stderr.String())
+		log.Fatalf(err.Error(), stderr.String())
 	}
 	cmd = exec.Command("docker", "compose", "-f", "../docker-compose.yaml", "up", "-d")
 	cmd.Stderr = &stderr
 	err = cmd.Run()
 	if err != nil {
-		log.Fatal(err, stderr.String())
+		log.Fatalf(err.Error(), stderr.String())
 	}
 }
 
