@@ -69,9 +69,16 @@ func FindJSON(data string) []string {
 	return result
 }
 
+var Timeout int
+
+func SetTimeout(timeout int) error {
+	Timeout = timeout
+	return nil
+}
+
 func SubscribeDataProductCommand(productName string, _ string, partitions string, seq string) error {
 	productName = ut.ProcessString(productName)
-	cmdString := "timeout 1 ../gravity-cli product sub "
+	cmdString := fmt.Sprintf("timeout %d ../gravity-cli product sub ", Timeout)
 	if productName != testutils.NullString {
 		cmdString += productName + " "
 	}
@@ -258,7 +265,8 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^已有 data product "'(.*?)'"$`, CreateDataProduct)
 	ctx.Given(`^已有 data product 的 ruleset "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
 	ctx.Given(`^已 publish 10 筆 Event$`, PublishProductEvent)
-	ctx.When(`^訂閱data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'"`, SubscribeDataProductCommand)
+	ctx.Given(`^設定訂閱 Timeout 為 "'(.*?)'" 秒$`, SetTimeout)
+	ctx.When(`^訂閱 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'"`, SubscribeDataProductCommand)
 	ctx.Then(`^Cli 回傳 "'(.*?)'" 內 "'(.*?)'" 後所有事件資料$`, ValidateSubResult)
 	ctx.Then(`^Cli 回傳指令失敗$`, SubCommandFail)
 }
