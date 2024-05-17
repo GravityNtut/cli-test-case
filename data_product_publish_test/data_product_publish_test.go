@@ -183,7 +183,13 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 	var pe gravity_sdk_types_product_event.ProductEvent
 
 	ch := make(chan *nats.Msg, 1)
-	js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
+	sub, err := js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
+
+	if err != nil {
+		return fmt.Errorf("subscribe failed %s", err.Error())
+	}
+	time.Sleep(1 * time.Second)
+	sub.Unsubscribe()
 
 	msg := <-ch
 
@@ -228,5 +234,5 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Then(`^使用 nats jetstream 查詢 GVT_default "'(.*?)'" 帶有 "'(.*?)'"$`, QueryJetstreamEventExist)
 	ctx.When(`^更新 data product "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateDataProductCommand)
 	ctx.When(`^更新 data product "'([^'"]*?)'" 的 ruleset "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateRulesetCommand)
-	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡沒有 "'(.*?)'" 帶有 "'(.*?)'"$`, CheckDPStreamDPNotExist)
+	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡沒有 "'(.*?)'"$`, CheckDPStreamDPNotExist)
 }
