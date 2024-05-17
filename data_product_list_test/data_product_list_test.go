@@ -34,27 +34,33 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
-func CreateDataProductCommand(dataProduct string, description string, enabled string) error {
-	dataProduct = ut.ProcessString(dataProduct)
-	commandString := "../gravity-cli product create "
-	if dataProduct != testutils.NullString {
-		commandString += dataProduct
-	}
-	if description != testutils.IgnoreString {
-		description := ut.ProcessString(description)
-		commandString += " --desc " + description
-	}
-
-	commandString += " --schema ./assets/schema.json" 
-
-	if enabled != testutils.IgnoreString {
-		if enabled == testutils.TrueString {
-			commandString += " --enabled"
+func CreateDataProductCommand(productAmount int,dataProduct string, description string, enabled string) error {
+	for i=0; i<productAmount; i++ {
+		if i==0 {
+			dataProduct = ut.ProcessString(dataProduct)
+		}else {
+			dataProduct = dataProduct + "_" + strconv.Itoa(i)
 		}
-	}	
-	err := ut.ExecuteShell(commandString)
-	if err != nil {
-		return err
+		commandString := "../gravity-cli product create "
+		if dataProduct != testutils.NullString {
+			commandString += dataProduct
+		}
+		if description != testutils.IgnoreString {
+			description := ut.ProcessString(description)
+			commandString += " --desc " + description
+		}
+
+		commandString += " --schema ./assets/schema.json" 
+
+		if enabled != testutils.IgnoreString {
+			if enabled == testutils.TrueString {
+				commandString += " --enabled"
+			}
+		}	
+		err := ut.ExecuteShell(commandString)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -87,19 +93,55 @@ func AddRulesetCommandSuccess() error {
 	return fmt.Errorf("ruleset 創建應該要成功")
 }
 
+func PublishProductEvent(event string, eventAmount int) error {
+	for i := 0; i < EventCount; i++ {
+		payload := fmt.Sprintf(`{"id":%d, "name":"test%d", "kcal":0, "price":0}`, i, i)
+		cmd := exec.Command(testutils.GravityCliString, "pub", event, payload)
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("publish event failed: %s", err.Error())
+		}
+	}
+	payload = ""
+	return nil
+}
+
+func PublishProductEventSuccess() error {
+	if ut.CmdResult.Err == nil {
+		return nil
+	}
+	return fmt.Errorf("publish event failed")
+}
+
+
 func ProductListCommand() error {
 	cmd := exec.Command(ut.GravityCliString, "product", "list")
 	return cmd.Run()
 }
 
-func ProductListCommandSuccess(ProductName string, Description string, Enabled string, RulesetAmount string, EventAmount string) error {
+func ProductListCommandSuccess(ProductAmount int, ProductName string, Description string, Enabled string, RulesetAmount string, EventAmount string) error {
 	outStr := ut.CmdResult.Stdout
 	outStrList = strings.Split(outStr, "\n")
-	product = outStrList[2]
-	if product[0] == ProductName && product[1] == Description && product[2] == Enabled && product[3] == RulesetAmount && product[4] == EventAmount{
-		return nil
+	for i := 0; i < ProductAmount; i++ {
+		product = outStrList[2 + i]
+		if i==0 {
+			dataProduct = ut.ProcessString(ProductName)
+		}else {
+			dataProduct = ProductName + "_" + strconv.Itoa(i)
+		}
+
+
+		if enabled == TrueString {
+			enabled = "enabled"	
+		} else{
+			enabled = "disabled"
+		}
+
+		if !(strings.Contains(product, dataProduct) && strings.Contains(product, Description) && strings.Contains(product, Enabled) && strings.Contains(product, RulesetAmount) && strings.Contains(product, EventAmount)) {
+			return errors.New("Cli回傳訊息錯誤")
+		}
 	}
-	return errors.New("Cli回傳訊息錯誤")
+	
+	return nil
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
@@ -111,10 +153,12 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
-	ctx.When(`^創建 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
+	ctx.When(`^創建 "'(.*?)'" 個 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
 	ctx.Then(`^Cli 回傳 "'(.*?)'" 建立成功$`, CreateDataProductCommandSuccess)
 	ctx.When(`^"'(.*?)'" 創建 "'(.*?)'" 個 ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'"$`, AddRulesetCommand)
 	ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
+	ctx.When(`^對 "'(.*?)'" 做 "'(.*?)'" 次 publish$`, PublishProductEvent)
+	ctx.Then(`^publish 成功$`, PublishProductEventSuccess)
 	ctx.When(`^使用gravity-cli 列出所有 data product$`, ProductListCommand)
-	ctx.Then(`^Cli 回傳 data product ProductName = "'(.*?)'", Description = "'(.*?)'", Enabled="'(.*?)'", RulesetAmount="'(.*?)'", EventAmount="'(.*?)'"$`, ProductListCommandSuccess)
+	ctx.Then(`^Cli 回傳 data product ProductAmount = "'(.*?)'", ProductName = "'(.*?)'", Description = "'(.*?)'", Enabled="'(.*?)'", RulesetAmount="'(.*?)'", EventAmount="'(.*?)'"$`, ProductListCommandSuccess)
 }
