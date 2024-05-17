@@ -14,12 +14,12 @@
     --schema="./assets/schema.json" \
 	--pk=id
 
-../gravity-cli product ruleset add drink drinkCreated2 \
-    --enabled \
-    --event=drinkCreated2 --method=create \
-    --schema="./assets/schema.json" \
-    --handler="./assets/wrongType.js" \
-	--pk=id
+# ../gravity-cli product ruleset add drink drinkCreated2 \
+#     --enabled \
+#     --event=drinkCreated2 --method=create \
+#     --schema="./assets/schema.json" \
+#     --handler="./assets/empty.js" \
+# 	--pk=id
 
 ../gravity-cli product ruleset add drink drinkCreated3 \
     --enabled \
