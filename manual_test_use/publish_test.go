@@ -11,8 +11,10 @@ import (
 	"test-case/testutils"
 	"testing"
 
+	gravity_sdk_types_product_event "github.com/BrobridgeOrg/gravity-sdk/v2/types/product_event"
 	"github.com/cucumber/godog"
 	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/proto"
 )
 
 type Rule struct {
@@ -46,6 +48,7 @@ type JSONData struct {
 }
 
 var jsonData JSONData
+var EventCount = 3
 
 var ut = testutils.TestUtils{}
 
@@ -68,7 +71,7 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
-func AddRulesetCommand(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string, enabled string) error {
+func AddRulesetCommand(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string) error {
 	dataProduct = ut.ProcessString(dataProduct)
 	ruleset = ut.ProcessString(ruleset)
 	commandString := "../gravity-cli product ruleset add "
@@ -100,14 +103,7 @@ func AddRulesetCommand(dataProduct string, ruleset string, method string, event 
 	if schema != testutils.IgnoreString {
 		commandString += " --schema " + schema
 	}
-	if enabled == testutils.TrueString {
-		commandString += " --enabled"
-	} else if enabled == testutils.FalseString {
-		commandString += " --enabled=false"
-	} else if enabled != testutils.IgnoreString {
-		return errors.New("enabled 參數錯誤")
-	}
-	commandString += " -s " + ut.Config.JetstreamURL
+	commandString += " --enabled -s " + ut.Config.JetstreamURL
 	err := ut.ExecuteShell(commandString)
 	if err != nil {
 		return err
@@ -137,7 +133,7 @@ func SearchRulesetByCLISuccess(dataProduct string, ruleset string) error {
 	return err
 }
 
-func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string, enabled string) error {
+func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string) error {
 	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
@@ -186,12 +182,152 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 	if err := ut.ValidateSchema(jsonData.Rules[ruleset].Schema, schema); err != nil {
 		return err
 	}
+	return nil
+}
 
-	if err := ut.ValidateEnabled(jsonData.Rules[ruleset].Enabled, enabled); err != nil {
-		return err
+var DataProduct string
+var Ruleset string
+var Event string
+
+const Method string = "create"
+const Pk string = "id,name"
+const RulesetDesc string = "drink創建事件"
+const Handler string = "./assets/handler.js"
+const Schema string = "./assets/schema.json"
+const Enabled string = "true"
+
+func CreateDataProduct(dataProduct string) error {
+	decription := "drink資料"
+	schema := "./assets/schema.json"
+	enabled := "true"
+	cmd := exec.Command(testutils.GravityCliString, "product", "create", dataProduct, "--desc", decription, "--schema", schema, "--enabled="+enabled, "-s", ut.Config.JetstreamURL)
+	err := cmd.Run()
+	if err != nil {
+		return errors.New("create data product failed")
 	}
 	return nil
 }
+
+func CreateDataProductRuleset(dataProduct string, ruleset string) error {
+	DataProduct = dataProduct
+	Ruleset = ruleset
+	Event = ruleset
+	cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "add", DataProduct, Ruleset, "--event", Event, "--method", Method, "--desc", RulesetDesc, "--pk", Pk, "--handler", Handler, "--schema", Schema, "--enabled="+Enabled, "-s", ut.Config.JetstreamURL)
+	err := cmd.Run()
+	if err != nil {
+		return errors.New("data product add ruleset failed")
+	}
+	return nil
+}
+
+func PublishProductEvent(numbersOfEvents int) error {
+	EventCount = numbersOfEvents
+	for i := 0; i < EventCount; i++ {
+		payload := `{"id":%d, "name":"test%d", "kcal":%d, "price":%d}`
+		result := fmt.Sprintf(payload, i+1, i+1, i*100, i+20)
+		cmd := exec.Command(testutils.GravityCliString, "pub", Event, result, "-s", ut.Config.JetstreamURL)
+		err := cmd.Run()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func DisplayData(dataProduct string) error {
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
+	defer nc.Close()
+
+	js, err := nc.JetStream()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var pe gravity_sdk_types_product_event.ProductEvent
+
+	ch := make(chan *nats.Msg, EventCount)
+	js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
+	for i := 0; i < EventCount; i++ {
+		msg := <-ch 
+		err = proto.Unmarshal(msg.Data, &pe)
+		if err != nil {
+			fmt.Printf("Failed to parsing product event: %v", err)
+		}
+
+		r, err := pe.GetContent()
+		if err != nil {
+			fmt.Printf("Failed to parsing content: %v", err)
+		}
+		fmt.Println(pe.EventName)
+		fmt.Println(r.AsMap())
+	}
+	return nil
+}
+
+// var productSubscriberName string = ""
+// var productSubscriberPartitions []int = []int{-1}
+// var productSubscriberStartSeq uint64 = 1
+
+// type ProductCommandContext struct {
+// 	Config    *configs.Config
+// 	Logger    *zap.Logger
+// 	Connector *connector.Connector
+// 	Product   *product.Product
+// 	Cmd       *cobra.Command
+// 	Args      []string
+// }
+
+// var cctx = &ProductCommandContext{}
+
+// func DisplayData(productName string) error {
+
+// 	opts := subscriber_sdk.NewOptions()
+// 	opts.Verbose = true
+// 	s := subscriber_sdk.NewSubscriberWithClient(productSubscriberName, cctx.Connector.GetClient(), opts)
+// 	_, err := s.Subscribe(productName, func(msg *nats.Msg) {
+
+// 		var pe gravity_sdk_types_product_event.ProductEvent
+
+// 		err := proto.Unmarshal(msg.Data, &pe)
+// 		if err != nil {
+// 			fmt.Printf("Failed to parsing product event: %v", err)
+// 			msg.Ack()
+// 			return
+// 		}
+
+// 		md, _ := msg.Metadata()
+
+// 		r, err := pe.GetContent()
+// 		if err != nil {
+// 			fmt.Printf("Failed to parsing content: %v", err)
+// 			msg.Ack()
+// 			return
+// 		}
+
+// 		// Convert data to JSON
+// 		event := map[string]interface{}{
+// 			"header":     msg.Header,
+// 			"subject":    msg.Subject,
+// 			"seq":        md.Sequence.Consumer,
+// 			"timestamp":  md.Timestamp,
+// 			"product":    productName,
+// 			"event":      pe.EventName,
+// 			"method":     pe.Method.String(),
+// 			"table":      pe.Table,
+// 			"primaryKey": pe.PrimaryKeys,
+// 			"payload":    r.AsMap(),
+// 		}
+
+// 		data, _ := json.MarshalIndent(event, "", "  ")
+// 		fmt.Println(string(data))
+// 		msg.Ack()
+// 	}, subscriber_sdk.Partition(productSubscriberPartitions...), subscriber_sdk.StartSequence(productSubscriberStartSeq))
+// 	if err != nil {
+// 		cctx.Cmd.SilenceUsage = true
+// 		return err
+// 	}
+
+// 	select {}
+// }
 
 // func AssertErrorMessages(expected string) error {
 // 	if cmdResult.Stderr == expected {
@@ -209,11 +345,14 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	})
 	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有data product "'(.*?)'" enabled "'(.*?)'"$`, ut.CreateDataProduct)
-	ctx.When(`^"'(.*?)'" 創建ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, AddRulesetCommand)
+	ctx.Given(`^已有data product "'(.*?)'"$`, CreateDataProduct)
+	ctx.Given(`^已有 data product 的 ruleset "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
+	ctx.When(`^"'(.*?)'" 創建ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, AddRulesetCommand)
 	ctx.Then(`^ruleset 創建失敗$`, AddRulesetCommandFailed)
 	ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
+	ctx.Then(`^已 publish "'(.*?)'" 筆 Event$`, PublishProductEvent)
+	ctx.Then(`^顯示 "'(.*?)'" 資料$`, DisplayData)
 	ctx.Then(`^使用gravity-cli 查詢 "'(.*?)'" 的 "'(.*?)'" 存在$`, SearchRulesetByCLISuccess)
-	ctx.Then(`使用nats jetstream 查詢 "'(.*?)'" 的 "'(.*?)'" 存在，且參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" 正確$`, SearchRulesetByNatsSuccess)
+	ctx.Then(`使用nats jetstream 查詢 "'(.*?)'" 的 "'(.*?)'" 存在，且參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" 正確$`, SearchRulesetByNatsSuccess)
 	// ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
 }
