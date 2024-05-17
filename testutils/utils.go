@@ -207,6 +207,11 @@ func (testUtils *TestUtils) ClearDataProducts() {
 
 	re := regexp.MustCompile(`^GVT_default_DP_(.*)`)
 	for stringName := range streams {
+		if stringName == "GVT_default" {
+			if err := js.PurgeStream(stringName); err != nil {
+				log.Fatalf(err.Error())
+			}
+		}
 		parts := re.FindStringSubmatch(stringName)
 		if parts == nil {
 			continue
@@ -217,13 +222,7 @@ func (testUtils *TestUtils) ClearDataProducts() {
 			log.Fatalf(err.Error())
 		}
 	}
-	for stringName := range streams {
-		if stringName == "GVT_default" {
-			if err := js.PurgeStream(stringName); err != nil {
-				log.Fatalf(err.Error())
-			}
-		}
-	}
+	
 }
 
 func (testUtils *TestUtils) RestartDocker() {

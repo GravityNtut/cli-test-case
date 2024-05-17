@@ -15,7 +15,7 @@ Scenario:
     Examples:
         |   ID   | Event      |                    Payload                     | RSMethod |       RSHandler     |       RSSchema       | RSPk | RSEnabled | DPEnabled |
         |  M(1)  | drinkEvent | '{"id":1,"name":"test","price":100,"kcal":50}' | init     | ./assets/handler.js | ./assets/schema.json | id   | [false]    | [false]    |
-        |  M(2)  | drinkEvent | '{"name":"test"}'                       | init     | ./assets/handler.js | ./assets/schema.json | id   | [true]    | [true]    |
+        #|  M(2)  | drinkEvent | '{"name":"test"}'                       | init     | ./assets/handler.js | ./assets/schema.json | id   | [true]    | [true]    |
 
     Scenario: 指令執行成功但沒publish到指定的DP
         Given 創建 data product "'drink'" 使用參數 "'<DPEnabled>'"
@@ -25,5 +25,5 @@ Scenario:
         Then 使用 nats jetstream 查詢 GVT_default "'<Event>'" 帶有 "'<Payload>'"
     Examples:
         |    ID   |    Event     |                    Payload                    | RSMethod |         RSHandler           |               RSSchema            |    RSPk    | RSEnabled |    DPEnabled    |
-        |  E3(1)  | drinkEvent   |            '{"id":1,"name":"test"}'           |   init   |      assets/handler.js      |          assets/schema.json       |    id      |  [true]   |      [true]     |
+        |  E3(1)  | drinkEvent   |            '{"name":"test"}'           |   init   |      assets/handler.js      |          assets/schema.json       |    id      |  [true]   |      [true]     |
 

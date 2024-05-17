@@ -13,6 +13,7 @@ import (
 	"strings"
 	"test-case/testutils"
 	"testing"
+	"time"
 
 	gravity_sdk_types_product_event "github.com/BrobridgeOrg/gravity-sdk/v2/types/product_event"
 	"github.com/cucumber/godog"
@@ -124,7 +125,13 @@ func CheckDPStreamDPNotExist(dataProduct string) error {
 	}
 
 	ch := make(chan *nats.Msg, EventCount)
-	js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
+	
+	sub, err := js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
+	if err != nil {
+		return fmt.Errorf("subscribe failed %s", err.Error())
+	}
+	time.Sleep(1 * time.Second)
+	sub.Unsubscribe()
 	if len(ch) != 0 {
 		return fmt.Errorf("預期不會進到GVT_default_DP裡，但是進了")
 	}
@@ -165,7 +172,7 @@ func UpdateRulesetCommand(dataProduct string, ruleset string) error {
 	return nil
 }
 
-func DisplayData(dataProduct string, event string, payload string) error {
+func CheckDPStreamDPExist(dataProduct string, event string, payload string) error {
 	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
@@ -217,9 +224,9 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^創建 data product "'(.*?)'" 使用參數 "'(.*?)'"$`, ut.CreateDataProduct)
 	ctx.Given(`^"'(.*?)'" 創建 ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
 	ctx.When(`^publish Event "'(.*?)'" 使用參數 "'(.*?)'"$`, PublishEventCommand)
-	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡有 "'(.*?)'" 帶有 "'(.*?)'"$`, DisplayData)
+	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡有 "'(.*?)'" 帶有 "'(.*?)'"$`, CheckDPStreamDPExist)
 	ctx.Then(`^使用 nats jetstream 查詢 GVT_default "'(.*?)'" 帶有 "'(.*?)'"$`, QueryJetstreamEventExist)
 	ctx.When(`^更新 data product "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateDataProductCommand)
 	ctx.When(`^更新 data product "'([^'"]*?)'" 的 ruleset "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateRulesetCommand)
-	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡沒有 "'(.*?)'" 帶有 "'(.*?)'"$`, DisplayData)
+	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡沒有 "'(.*?)'" 帶有 "'(.*?)'"$`, CheckDPStreamDPNotExist)
 }
