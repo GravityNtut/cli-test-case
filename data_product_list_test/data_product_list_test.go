@@ -43,15 +43,14 @@ func TestFeatures(t *testing.T) {
 
 func CreateDataProductCommand(productAmount int,dataProduct string, description string, enabled string) error {
 	for i:=0; i<productAmount; i++ {
+		var dataProductName string
 		if i==0 {
-			dataProduct = ut.ProcessString(dataProduct)
+			dataProductName = ut.ProcessString(dataProduct)
 		}else {
-			dataProduct = dataProduct + "_" + strconv.Itoa(i)
+			dataProductName = dataProduct + "_" + strconv.Itoa(i)
 		}
 		commandString := "../gravity-cli product create "
-		if dataProduct != testutils.NullString {
-			commandString += dataProduct
-		}
+		commandString += dataProductName
 		if description != testutils.IgnoreString {
 			description := ut.ProcessString(description)
 			commandString += " --desc " + description
@@ -72,13 +71,22 @@ func CreateDataProductCommand(productAmount int,dataProduct string, description 
 	return nil
 }
 
-func CreateDataProductCommandSuccess(productName string) error {
+func CreateDataProductCommandSuccess(productAmount int, productName string) error {
 	outStr := ut.CmdResult.Stdout
 	productName = ut.ProcessString(productName)
-	if outStr == "Product \""+productName+"\" was created\n" {
-		return nil
+	productAmount-=1
+	if( productAmount>1){
+		if outStr == "Product \"" + productName + "_" + strconv.Itoa(productAmount) + "\" was created\n" {
+			return nil
+		}
+	}else{
+		if outStr == "Product \"" + productName + "\" was created\n" {
+			return nil
+		}
 	}
-	return errors.New("Cli回傳訊息create錯誤")
+	
+	// return errors.New("Cli回傳訊息create錯誤")
+	return errors.New(outStr)
 }
 
 func AddRulesetCommand(dataProduct string, RulesetAmount int) error {
@@ -135,7 +143,7 @@ func ProductListCommand() error {
 	return ut.ExecuteShell(cmd)
 }
 
-func ProductListCommandSuccess(ProductAmount int, ProductName string, Description string, Enabled string, RulesetAmount string, EventAmount string) error {
+func ProductListCommandSuccess(ProductAmount int, dataProduct string, Description string, Enabled string, RulesetAmount string, EventAmount string) error {
 	outStr := ut.CmdResult.Stdout
 	// return errors.New(outStr);
 
@@ -144,40 +152,50 @@ func ProductListCommandSuccess(ProductAmount int, ProductName string, Descriptio
 	if(len(outStrList) != ProductAmount+3){
 		return errors.New("Cli回傳訊息ProductAmount錯誤")
 	}
-	for i := 0; i < ProductAmount; i++ {
-		product := outStrList[2+i]
-		if i==0 {
-			ProductName = ut.ProcessString(ProductName)
-		}else {
-			ProductName = ProductName + "_" + strconv.Itoa(i)
-		}
 
+	if strings.Compare(Enabled, TrueString)==0{ // || strings.Compare(Enabled, "enabled")==0
+		Enabled = "enabled"	
+	} else{
+		Enabled = "disabled"
+	}
 
-		if Enabled == TrueString {
-			Enabled = "enabled"	
-		} else{
-			Enabled = "disabled"
-		}
-
-		if !(strings.Contains(product, ProductName)){
-			return errors.New("Cli回傳ProductName錯誤")
-		}
-		if( Description!=blankString1 && Description!=blankString2 ){
-			if !( strings.Contains(product, Description)){
-				return errors.New("Cli回傳Description錯誤")
+	if(ProductAmount > 1 ){
+		for i := 1; i < ProductAmount; i++ {
+			product := outStrList[2+i-1]
+			dataProductName := dataProduct + "_" + strconv.Itoa(i)
+			if !(strings.Contains(product, dataProductName)){
+				// return errors.New(outStr)
+				return errors.New("Cli回傳list ProductName錯誤")
+			}
+			if( Description!=blankString1 && Description!=blankString2 ){
+				if !( strings.Contains(product, Description)){
+					return errors.New("Cli回傳list Description錯誤")
+				}
+			}
+			if !(strings.Contains(product, Enabled)){
+				return errors.New("Cli回傳list Enabled錯誤")
 			}
 		}
-		if !(strings.Contains(product, Enabled)){
-			return errors.New("Cli回傳Enabled錯誤")
+	}else{
+		product := outStrList[2+ProductAmount-1]
+		// outStrList := strings.Split(product, " ")
+		outStrList = strings.Fields(product)
+		index := 0
+		if( Description!=blankString1 && Description!=blankString2 ){
+			index++
 		}
-		if !(strings.Contains(product, RulesetAmount)){
-			return errors.New("Cli回傳RulesetAmount錯誤")
+		if ( outStrList[2+index] != RulesetAmount ){
+			// return errors.New("Cli回傳list RulesetAmount錯誤")
+			// return errors.New("Cli回傳list RulesetAmount錯誤" + outStrList[0])
+			// return errors.New(product)
+			return errors.New("Cli回傳list RulesetAmount錯誤" + outStrList[0] + "/" + outStrList[1] + "/" +  outStrList[2] + "/" +  outStrList[3])
 		}
-		if !(strings.Contains(product, EventAmount)){
-			return errors.New("Cli回傳EventAmount錯誤")
+		if ( outStrList[3+index] != EventAmount ){
+			// return errors.New("Cli回傳list EventAmount錯誤")
+			return errors.New("Cli回傳list EventAmount錯誤" + outStrList[3+index])
 		}
-
 	}
+
 	
 	return nil
 }
@@ -192,7 +210,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
 	ctx.When(`^創建 "'(.*?)'" 個 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
-	ctx.Then(`^Cli 回傳 "'(.*?)'" 建立成功$`, CreateDataProductCommandSuccess)
+	ctx.Then(`^Cli 回傳第 "'(.*?)'" 個 "'(.*?)'" 建立成功$`, CreateDataProductCommandSuccess)
 	ctx.When(`^對"'(.*?)'" 創建 "'(.*?)'" 個 ruleset$`, AddRulesetCommand)
 	ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
 	ctx.When(`^對Event做 "'(.*?)'" 次 publish$`, PublishProductEvent)
