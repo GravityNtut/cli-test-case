@@ -1,8 +1,8 @@
 Feature: Data Product list
 
 Scenario:
-    Given 已開啟服務nats
-    Given 已開啟服務dispatcher
+    Given 已開啟服務 nats
+    Given 已開啟服務 dispatcher
 #Scenario
     Scenario: 針對data product 的 event list，成功情境
     When 創建 "'<ProductAmount>'" 個 data product "'<ProductName>'" 使用參數 "'<Description>'" "'<Enabled>'"

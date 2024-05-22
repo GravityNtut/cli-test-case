@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -174,7 +175,7 @@ func (testUtils *TestUtils) ClearDataProducts() {
 		log.Fatal(err)
 	}
 
-	streams := js.StreamNames()
+	streams := js.StreamNames(nats.MaxWait(200 * time.Second))
 
 	re := regexp.MustCompile(`^GVT_default_DP_(.*)`)
 	for stringName := range streams {
