@@ -150,6 +150,7 @@ func ProductListCommandSuccess(ProductAmount int, dataProduct string, Descriptio
 	outStrList := strings.Split(outStr, "\n")
 	// fmt.Println("len:",len(outStrList))
 	if(len(outStrList) != ProductAmount+3){
+		// return errors.New(outStr)
 		return errors.New("Cli回傳訊息ProductAmount錯誤")
 	}
 
@@ -200,6 +201,14 @@ func ProductListCommandSuccess(ProductAmount int, dataProduct string, Descriptio
 	return nil
 }
 
+func ProductListCommandFail() error {
+	outStr := ut.CmdResult.Stderr
+	if strings.Contains(outStr, "Error: No available products") {
+		return nil
+	}
+	return errors.New(outStr)
+}
+
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
@@ -217,4 +226,5 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Then(`^publish 成功$`, PublishProductEventSuccess)
 	ctx.When(`^使用gravity-cli 列出所有 data product$`, ProductListCommand)
 	ctx.Then(`^回傳 data product ProductAmount = "'(.*?)'", ProductName = "'(.*?)'", Description = "'(.*?)'", Enabled="'(.*?)'", RulesetAmount="'(.*?)'", EventAmount="'(.*?)'"$`, ProductListCommandSuccess)
+	ctx.Then(`^回傳 Error: No available products$`, ProductListCommandFail)
 }
