@@ -16,8 +16,8 @@ Scenario:
     Examples:
         |  ID   | ProductName | Description | Enabled | RulesetAmount | EventAmount | ProductAmount |
         |  M(1) | [a]x240     | description | [false] | 0             | 0           | 1             | #pass
-        # |  M(2) | drink       | [a]x32768   | [true]  | 0             | 0           | 1             | #pass 
-        # |  M(3) | drink       | " "         | [true]  | 1             | 1000        | 1             | #1000000
+        |  M(2) | drink       | [a]x32768   | [true]  | 0             | 0           | 1             | #pass 
+        |  M(3) | drink       | " "         | [true]  | 1             | 500         | 1             | #1000000
         |  M(4) | drink       | ""          | [true]  | 1             | 1           | 100           | # pass
 
 #Scenario
@@ -28,8 +28,3 @@ Scenario:
     Examples:
         |  ID   | ProductAmount |
         |  M(1) | 0             | #
-
-# Q
-# 1. publish是否成功都會return 0, 要怎麼判斷是否失敗
-# 2. 文件上的參數實際上未使用還需要寫example嗎
-# 3. 原本M(3)要跑1000000次灌爆他，可是經過實驗後發現跑這麼多次需要花七天的時間，是否可以用這點向老師說明可以不用做這麼多次?

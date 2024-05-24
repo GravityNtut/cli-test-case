@@ -85,8 +85,7 @@ func CreateDataProductCommandSuccess(productAmount int, productName string) erro
 		}
 	}
 	
-	// return errors.New("Cli回傳訊息create錯誤")
-	return errors.New(outStr)
+	return errors.New("Cli回傳訊息create錯誤")
 }
 
 func AddRulesetCommand(dataProduct string, RulesetAmount int) error {
@@ -100,11 +99,8 @@ func AddRulesetCommand(dataProduct string, RulesetAmount int) error {
 		cmd := exec.Command(GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--enabled", event, "--method=create", "--schema='./assets/schema.json'", "--pk=id")
 		cmdString := cmd.String()
 		err := ut.ExecuteShell(cmdString)
-		// err := cmd.Run()
 		if err != nil {
-		// 	return errors.New("ruleset add 參數錯誤")
-			outStr := ut.CmdResult.Stderr
-			return errors.New(outStr)
+			return errors.New("ruleset add 參數錯誤")
 		}
 	}
 	return nil
@@ -117,7 +113,6 @@ func AddRulesetCommandSuccess() error {
 	return fmt.Errorf("ruleset 創建應該要成功")
 }
 
-// TODO: publish是否成功都會return 0, 要怎麼判斷是否失敗
 func PublishProductEvent(eventAmount int) error {
 	for i := 0; i < eventAmount; i++ {
 		event := "drinkCreated"
@@ -145,16 +140,13 @@ func ProductListCommand() error {
 
 func ProductListCommandSuccess(ProductAmount int, dataProduct string, Description string, Enabled string, RulesetAmount string, EventAmount string) error {
 	outStr := ut.CmdResult.Stdout
-	// return errors.New(outStr);
 
 	outStrList := strings.Split(outStr, "\n")
-	// fmt.Println("len:",len(outStrList))
 	if(len(outStrList) != ProductAmount+3){
-		// return errors.New(outStr)
 		return errors.New("Cli回傳訊息ProductAmount錯誤")
 	}
 
-	if strings.Compare(Enabled, TrueString)==0{ // || strings.Compare(Enabled, "enabled")==0
+	if strings.Compare(Enabled, TrueString)==0{ 
 		Enabled = "enabled"	
 	} else{
 		Enabled = "disabled"
@@ -165,7 +157,6 @@ func ProductListCommandSuccess(ProductAmount int, dataProduct string, Descriptio
 			product := outStrList[2+i-1]
 			dataProductName := dataProduct + "_" + strconv.Itoa(i)
 			if !(strings.Contains(product, dataProductName)){
-				// return errors.New(outStr)
 				return errors.New("Cli回傳list ProductName錯誤")
 			}
 			if( Description!=blankString1 && Description!=blankString2 ){
@@ -179,21 +170,16 @@ func ProductListCommandSuccess(ProductAmount int, dataProduct string, Descriptio
 		}
 	}else{
 		product := outStrList[2+ProductAmount-1]
-		// outStrList := strings.Split(product, " ")
 		outStrList = strings.Fields(product)
 		index := 0
 		if( Description!=blankString1 && Description!=blankString2 ){
 			index++
 		}
 		if ( outStrList[2+index] != RulesetAmount ){
-			// return errors.New("Cli回傳list RulesetAmount錯誤")
-			// return errors.New("Cli回傳list RulesetAmount錯誤" + outStrList[0])
-			// return errors.New(product)
-			return errors.New("Cli回傳list RulesetAmount錯誤" + outStrList[0] + "/" + outStrList[1] + "/" +  outStrList[2] + "/" +  outStrList[3])
+			return errors.New("Cli回傳list RulesetAmount錯誤")
 		}
 		if ( outStrList[3+index] != EventAmount ){
-			// return errors.New("Cli回傳list EventAmount錯誤")
-			return errors.New("Cli回傳list EventAmount錯誤" + outStrList[3+index])
+			return errors.New("Cli回傳list EventAmount錯誤")
 		}
 	}
 
