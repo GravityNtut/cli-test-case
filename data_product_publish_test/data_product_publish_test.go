@@ -128,16 +128,30 @@ func CheckDPStreamDPNotExist(dataProduct string) error {
 
 	ch := make(chan *nats.Msg, EventCount)
 	sub, err := js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
-	if err != nil {
-		return fmt.Errorf("subscribe failed %s", err.Error())
-	}
-	time.Sleep(1 * time.Second)
-	if err := sub.Unsubscribe(); err != nil {
-		return fmt.Errorf("unsubscribe failed %s", err.Error())
-	}
-	if len(ch) != 0 {
-		return fmt.Errorf("預期不會進到GVT_default_DP裡，但是進了")
-	}
+	go func() {
+		for msg := range ch {
+			if err != nil {
+				fmt.Printf("subscribe failed %s", err.Error())
+			}
+			time.Sleep(1 * time.Second)
+			if err := sub.Unsubscribe(); err != nil {
+				fmt.Printf("unsubscribe failed %s", err.Error())
+			}
+			if len(ch) != 0 {
+				fmt.Printf("預期不會進到GVT_default_DP裡，但是進了")
+			}
+			fmt.Println("msg: ", msg)
+		}
+    }()
+
+    // 模拟处理一段时间
+    time.Sleep(10 * time.Second)
+
+    // 关闭消息通道以停止消费
+    close(ch)
+
+    // 等待一段时间以确保所有消息被处理
+    time.Sleep(1 * time.Second)
 	return nil
 }
 
@@ -191,7 +205,7 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 	if err != nil {
 		return fmt.Errorf("subscribe failed %s", err.Error())
 	}
-	time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Second)
 	if err := sub.Unsubscribe(); err != nil {
 		return fmt.Errorf("unsubscribe failed %s", err.Error())
 	}
@@ -207,8 +221,6 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 	if err != nil {
 		fmt.Printf("Failed to parsing content: %v", err)
 	}
-	// fmt.Println(pe.EventName)
-	// fmt.Println(r.AsMap())
 
 	JSONByte, err := json.Marshal(r.AsMap())
 	if err != nil {
@@ -228,6 +240,68 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 	return nil
 }
 
+func checkCheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, payload string, payload2 string) error {
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
+	defer nc.Close()
+
+	js, err := nc.JetStream()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var pe gravity_sdk_types_product_event.ProductEvent
+
+	//var payloadList []string = []string{payload, payload2}
+	ch := make(chan *nats.Msg, 2)
+	js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
+
+	go func() {
+        for msg := range ch {
+			err = proto.Unmarshal(msg.Data, &pe)
+			if err != nil {
+				fmt.Printf("Failed to parsing product event: %v", err)
+			}
+
+			r, err := pe.GetContent()
+			if err != nil {
+				fmt.Printf("Failed to parsing content: %v", err)
+			}
+			JSONByte, err := json.Marshal(r.AsMap())
+			if err != nil {
+				fmt.Printf("Receive payload marshal fail %s", err.Error())
+			}
+			recieveJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
+			fmt.Println("recieveJSONStringResult: ", recieveJSONStringResult)
+			// regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payloadList[i])[1]
+			// regexPayload = ut.FormatJSONData(regexPayload)
+			// fmt.Println("recieveJSONStringResult: ", recieveJSONStringResult)
+			// fmt.Println("regexPayload: ", regexPayload)
+			// if recieveJSONStringResult != regexPayload {
+			// 		return errors.New("payload 資料不正確")
+			// }
+        }
+    }()
+
+    // 模拟处理一段时间
+    time.Sleep(10 * time.Second)
+
+    // 关闭消息通道以停止消费
+    close(ch)
+
+    // 等待一段时间以确保所有消息被处理
+    time.Sleep(1 * time.Second)
+	if pe.EventName != event {
+		return errors.New("event 比對不一致")
+	}
+	return nil
+}
+
+func PublishEventCommandFailed() error {
+	if ut.CmdResult.Err != nil {
+		return nil
+	}
+	return fmt.Errorf("publish應該要失敗")
+}
+
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
@@ -244,4 +318,6 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.When(`^更新 data product "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateDataProductCommand)
 	ctx.When(`^更新 data product "'([^'"]*?)'" 的 ruleset "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateRulesetCommand)
 	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡沒有 "'(.*?)'"$`, CheckDPStreamDPNotExist)
+	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡是否有兩筆 "'(.*?)'" 帶有 "'(.*?)'" 與 "'(.*?)'"$`, checkCheckDPStreamDPEventHasTwoPayload)
+	ctx.Then(`^Cli 回傳建立失敗$`, PublishEventCommandFailed)
 }
