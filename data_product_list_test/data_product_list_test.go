@@ -3,12 +3,12 @@ package dataproductlist
 import (
 	"context"
 	"errors"
-	"os/exec"
-	"test-case/testutils"
-	"testing"
 	"fmt"
+	"os/exec"
 	"strconv"
 	"strings"
+	"test-case/testutils"
+	"testing"
 
 	"github.com/cucumber/godog"
 )
@@ -16,8 +16,8 @@ import (
 const (
 	TrueString       = "[true]"
 	GravityCliString = "../gravity-cli"
-	blankString1 = "\"\""
-	blankString2 = "\" \""
+	blankString1     = "\"\""
+	blankString2     = "\" \""
 )
 
 var ut = testutils.TestUtils{}
@@ -41,12 +41,12 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
-func CreateDataProductCommand(productAmount int,dataProduct string, description string, enabled string) error {
-	for i:=0; i<productAmount; i++ {
+func CreateDataProductCommand(productAmount int, dataProduct string, description string, enabled string) error {
+	for i := 0; i < productAmount; i++ {
 		var dataProductName string
-		if i==0 {
+		if i == 0 {
 			dataProductName = ut.ProcessString(dataProduct)
-		}else {
+		} else {
 			dataProductName = dataProduct + "_" + strconv.Itoa(i)
 		}
 		commandString := "../gravity-cli product create "
@@ -56,13 +56,13 @@ func CreateDataProductCommand(productAmount int,dataProduct string, description 
 			commandString += " --desc " + description
 		}
 
-		commandString += " --schema './assets/schema.json'" 
+		commandString += " --schema './assets/schema.json'"
 
 		if enabled != testutils.IgnoreString {
 			if enabled == testutils.TrueString {
 				commandString += " --enabled"
 			}
-		}	
+		}
 		err := ut.ExecuteShell(commandString)
 		if err != nil {
 			return err
@@ -74,28 +74,28 @@ func CreateDataProductCommand(productAmount int,dataProduct string, description 
 func CreateDataProductCommandSuccess(productAmount int, productName string) error {
 	outStr := ut.CmdResult.Stdout
 	productName = ut.ProcessString(productName)
-	productAmount-=1
-	if( productAmount>1){
-		if outStr == "Product \"" + productName + "_" + strconv.Itoa(productAmount) + "\" was created\n" {
+	productAmount--
+	if productAmount > 1 {
+		if outStr == "Product \""+productName+"_"+strconv.Itoa(productAmount)+"\" was created\n" {
 			return nil
 		}
-	}else{
-		if outStr == "Product \"" + productName + "\" was created\n" {
+	} else {
+		if outStr == "Product \""+productName+"\" was created\n" {
 			return nil
 		}
 	}
-	
+
 	return errors.New("Cli回傳訊息create錯誤")
 }
 
 func AddRulesetCommand(dataProduct string, RulesetAmount int) error {
 	dataProduct = ut.ProcessString(dataProduct)
-	for i := 0; i < int(RulesetAmount); i++ {
+	for i := 0; i < RulesetAmount; i++ {
 		ruleset := dataProduct + "Created"
-		if(i!=0){
+		if i != 0 {
 			ruleset += strconv.Itoa(i)
 		}
-		event := "--event="+ruleset
+		event := "--event=" + ruleset
 		cmd := exec.Command(GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--enabled", event, "--method=create", "--schema='./assets/schema.json'", "--pk=id")
 		cmdString := cmd.String()
 		err := ut.ExecuteShell(cmdString)
@@ -132,7 +132,6 @@ func PublishProductEventSuccess() error {
 	return fmt.Errorf("publish event failed")
 }
 
-
 func ProductListCommand() error {
 	cmd := "../gravity-cli product list"
 	return ut.ExecuteShell(cmd)
@@ -142,48 +141,47 @@ func ProductListCommandSuccess(ProductAmount int, dataProduct string, Descriptio
 	outStr := ut.CmdResult.Stdout
 
 	outStrList := strings.Split(outStr, "\n")
-	if(len(outStrList) != ProductAmount+3){
+	if len(outStrList) != ProductAmount+3 {
 		return errors.New("Cli回傳訊息ProductAmount錯誤")
 	}
 
-	if strings.Compare(Enabled, TrueString)==0{ 
-		Enabled = "enabled"	
-	} else{
+	if strings.Compare(Enabled, TrueString) == 0 {
+		Enabled = "enabled"
+	} else {
 		Enabled = "disabled"
 	}
 
-	if(ProductAmount > 1 ){
+	if ProductAmount > 1 {
 		for i := 1; i < ProductAmount; i++ {
 			product := outStrList[2+i-1]
 			dataProductName := dataProduct + "_" + strconv.Itoa(i)
-			if !(strings.Contains(product, dataProductName)){
+			if !(strings.Contains(product, dataProductName)) {
 				return errors.New("Cli回傳list ProductName錯誤")
 			}
-			if( Description!=blankString1 && Description!=blankString2 ){
-				if !( strings.Contains(product, Description)){
+			if Description != blankString1 && Description != blankString2 {
+				if !(strings.Contains(product, Description)) {
 					return errors.New("Cli回傳list Description錯誤")
 				}
 			}
-			if !(strings.Contains(product, Enabled)){
+			if !(strings.Contains(product, Enabled)) {
 				return errors.New("Cli回傳list Enabled錯誤")
 			}
 		}
-	}else{
+	} else {
 		product := outStrList[2+ProductAmount-1]
 		outStrList = strings.Fields(product)
 		index := 0
-		if( Description!=blankString1 && Description!=blankString2 ){
+		if Description != blankString1 && Description != blankString2 {
 			index++
 		}
-		if ( outStrList[2+index] != RulesetAmount ){
+		if outStrList[2+index] != RulesetAmount {
 			return errors.New("Cli回傳list RulesetAmount錯誤")
 		}
-		if ( outStrList[3+index] != EventAmount ){
+		if outStrList[3+index] != EventAmount {
 			return errors.New("Cli回傳list EventAmount錯誤")
 		}
 	}
 
-	
 	return nil
 }
 
