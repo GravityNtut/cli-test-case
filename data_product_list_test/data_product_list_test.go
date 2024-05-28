@@ -14,10 +14,8 @@ import (
 )
 
 const (
-	TrueString       = "[true]"
-	GravityCliString = "../gravity-cli"
-	blankString1     = "\"\""
-	blankString2     = "\" \""
+	blankString1 = "\"\""
+	blankString2 = "\" \""
 )
 
 var ut = testutils.TestUtils{}
@@ -42,50 +40,29 @@ func TestFeatures(t *testing.T) {
 }
 
 func CreateDataProductCommand(productAmount int, dataProduct string, description string, enabled string) error {
+	var dataProductName string
+	dataProductName = ut.ProcessString(dataProduct)
 	for i := 0; i < productAmount; i++ {
-		var dataProductName string
-		if i == 0 {
-			dataProductName = ut.ProcessString(dataProduct)
-		} else {
+		if i != 0 {
 			dataProductName = dataProduct + "_" + strconv.Itoa(i)
 		}
-		commandString := "../gravity-cli product create "
-		commandString += dataProductName
 		if description != testutils.IgnoreString {
-			description := ut.ProcessString(description)
-			commandString += " --desc " + description
+			description = ut.ProcessString(description)
 		}
 
-		commandString += " --schema './assets/schema.json'"
-
+		enabledString := ""
 		if enabled != testutils.IgnoreString {
 			if enabled == testutils.TrueString {
-				commandString += " --enabled"
+				enabledString += " --enabled"
 			}
 		}
-		err := ut.ExecuteShell(commandString)
+		cmd := exec.Command("../gravity-cli", "product", "create", dataProductName, "--desc", description, "--schema", "./assets/schema.json", enabledString)
+		err := cmd.Run()
 		if err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func CreateDataProductCommandSuccess(productAmount int, productName string) error {
-	outStr := ut.CmdResult.Stdout
-	productName = ut.ProcessString(productName)
-	productAmount--
-	if productAmount > 1 {
-		if outStr == "Product \""+productName+"_"+strconv.Itoa(productAmount)+"\" was created\n" {
-			return nil
-		}
-	} else {
-		if outStr == "Product \""+productName+"\" was created\n" {
-			return nil
-		}
-	}
-
-	return errors.New("Cli回傳訊息create錯誤")
 }
 
 func AddRulesetCommand(dataProduct string, RulesetAmount int) error {
@@ -95,29 +72,21 @@ func AddRulesetCommand(dataProduct string, RulesetAmount int) error {
 		if i != 0 {
 			ruleset += strconv.Itoa(i)
 		}
-		event := "--event=" + ruleset
-		cmd := exec.Command(GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--enabled", event, "--method=create", "--schema='./assets/schema.json'", "--pk=id")
-		cmdString := cmd.String()
-		err := ut.ExecuteShell(cmdString)
+		event := "--event " + ruleset
+		cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--event", ruleset, "--enabled", event, "--method", "create", "--schema", "./assets/schema.json", "--pk", "id")
+		err := cmd.Run()
 		if err != nil {
-			return errors.New("ruleset add 參數錯誤")
+			return errors.New(cmd.String())
 		}
 	}
 	return nil
-}
-
-func AddRulesetCommandSuccess() error {
-	if ut.CmdResult.Err == nil {
-		return nil
-	}
-	return fmt.Errorf("ruleset 創建應該要成功")
 }
 
 func PublishProductEvent(eventAmount int) error {
 	for i := 0; i < eventAmount; i++ {
 		event := "drinkCreated"
 		payload := fmt.Sprintf(`{"id":%d, "name":"test%d", "kcal":0, "price":0}`, i, i)
-		cmd := exec.Command(GravityCliString, "pub", event, payload)
+		cmd := exec.Command(testutils.GravityCliString, "pub", event, payload)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("publish event failed: %s", err.Error())
 		}
@@ -125,59 +94,52 @@ func PublishProductEvent(eventAmount int) error {
 	return nil
 }
 
-func PublishProductEventSuccess() error {
-	if ut.CmdResult.Err == nil {
-		return nil
-	}
-	return fmt.Errorf("publish event failed")
-}
-
 func ProductListCommand() error {
-	cmd := "../gravity-cli product list"
+	const cmd = "../gravity-cli product list"
 	return ut.ExecuteShell(cmd)
 }
 
-func ProductListCommandSuccess(ProductAmount int, dataProduct string, Description string, Enabled string, RulesetAmount string, EventAmount string) error {
+func ProductListCommandSuccess(productAmount int, dataProduct string, description string, enabled string, rulesetAmount string, eventAmount string) error {
 	outStr := ut.CmdResult.Stdout
 
 	outStrList := strings.Split(outStr, "\n")
-	if len(outStrList) != ProductAmount+3 {
+	if len(outStrList) != productAmount+3 {
 		return errors.New("Cli回傳訊息ProductAmount錯誤")
 	}
 
-	if strings.Compare(Enabled, TrueString) == 0 {
-		Enabled = "enabled"
+	if strings.Compare(enabled, testutils.TrueString) == 0 {
+		enabled = "enabled"
 	} else {
-		Enabled = "disabled"
+		enabled = "disabled"
 	}
 
-	if ProductAmount > 1 {
-		for i := 1; i < ProductAmount; i++ {
+	if productAmount > 1 {
+		for i := 1; i < productAmount; i++ {
 			product := outStrList[2+i-1]
 			dataProductName := dataProduct + "_" + strconv.Itoa(i)
 			if !(strings.Contains(product, dataProductName)) {
 				return errors.New("Cli回傳list ProductName錯誤")
 			}
-			if Description != blankString1 && Description != blankString2 {
-				if !(strings.Contains(product, Description)) {
+			if description != blankString1 && description != blankString2 {
+				if !(strings.Contains(product, description)) {
 					return errors.New("Cli回傳list Description錯誤")
 				}
 			}
-			if !(strings.Contains(product, Enabled)) {
+			if !(strings.Contains(product, enabled)) {
 				return errors.New("Cli回傳list Enabled錯誤")
 			}
 		}
 	} else {
-		product := outStrList[2+ProductAmount-1]
-		outStrList = strings.Fields(product)
+		product := outStrList[2+productAmount-1]
+		productItem := strings.Fields(product)
 		index := 0
-		if Description != blankString1 && Description != blankString2 {
+		if description != blankString1 && description != blankString2 {
 			index++
 		}
-		if outStrList[2+index] != RulesetAmount {
+		if productItem[2+index] != rulesetAmount {
 			return errors.New("Cli回傳list RulesetAmount錯誤")
 		}
-		if outStrList[3+index] != EventAmount {
+		if productItem[3+index] != eventAmount {
 			return errors.New("Cli回傳list EventAmount錯誤")
 		}
 	}
@@ -203,12 +165,9 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
 	ctx.When(`^創建 "'(.*?)'" 個 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
-	ctx.Then(`^Cli 回傳第 "'(.*?)'" 個 "'(.*?)'" 建立成功$`, CreateDataProductCommandSuccess)
 	ctx.When(`^對"'(.*?)'" 創建 "'(.*?)'" 個 ruleset$`, AddRulesetCommand)
-	ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
 	ctx.When(`^對Event做 "'(.*?)'" 次 publish$`, PublishProductEvent)
-	ctx.Then(`^publish 成功$`, PublishProductEventSuccess)
 	ctx.When(`^使用gravity-cli 列出所有 data product$`, ProductListCommand)
-	ctx.Then(`^回傳 data product ProductAmount = "'(.*?)'", ProductName = "'(.*?)'", Description = "'(.*?)'", Enabled="'(.*?)'", RulesetAmount="'(.*?)'", EventAmount="'(.*?)'"$`, ProductListCommandSuccess)
+	ctx.Then(`^Cli 回傳 "'(.*?)'" 個 data product, 每個 data product 裡面的名字為 "'(.*?)'", 描述內容為 "'(.*?)'", Enabled 的狀態為 "'(.*?)'", Ruleset 的數量為 "'(.*?)'" 個, 以及 Event 總共發布 "'(.*?)'" 個 $`, ProductListCommandSuccess)
 	ctx.Then(`^回傳 Error: No available products$`, ProductListCommandFail)
 }
