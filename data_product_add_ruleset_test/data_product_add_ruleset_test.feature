@@ -26,24 +26,31 @@ Scenario:
         | M(11) | drink       | drinkCreated  | create       | drinkCreated  |   ""          |  description      |     ./assets/handler.js       |      ./assets/schema.json      | [true]  |
         | M(12) | drink       | drinkCreated  | create       | drinkCreated  |   [ignore]    |    [ignore]       |             [ignore]          |            [ignore]            | [true]  |
         | M(13) | drink       | drinkCreated  | create       | drinkCreated  |   [a]x32768   |   [a]x32768       |     ./assets/handler.js       |      ./assets/schema.json      | [true]  |
-        | M(14) | drink       | drinkCreated  | create       | drinkCreated  |   id          |  ""               |     ./assets/handler.js       |      ./assets/schema.json      | [true]  |
-        | M(15) | drink       | drinkCreated  | create       | drinkCreated  |   id          |  description      |     ./assets/handler.js       |      ./assets/schema.json      | [false] |
-        | M(16) | drink       | drinkCreated  | create       | drinkCreated  |   id          |  description      |     ./assets/handler.js       |      ./assets/schema.json      | [ignore]|
+        | M(14) | drink       | drinkCreated  | create       | drinkCreated  |   "id, "          |  description               |     ./assets/handler.js       |      ./assets/schema.json      | [true]  |
+        | M(15) | drink       | drinkCreated  | create       | drinkCreated  |   id          |  ""               |     ./assets/handler.js       |      ./assets/schema.json      | [true]  |
+        | M(16) | drink       | drinkCreated  | create       | drinkCreated  |   id          |  description               |     ./assets/new.txt       |      ./assets/schema.json      | [true]  |
+        | M(17) | drink       | drinkCreated  | create       | drinkCreated  |   id          |  description               |     ./assets/fail_handler.js       |      ./assets/schema.json      | [true]  |
+        | M(18) | drink       | drinkCreated  | create       | drinkCreated  |   id          |  description               |     ./assets/WrongFile.jpg       |      ./assets/schema.json      | [true]  |
+        | M(19) | drink       | drinkCreated  | create       | drinkCreated  |   id          |  description               |     ./assets/empty.js       |      ./assets/schema.json      | [true]  |
+        | M(20) | drink       | drinkCreated  | create       | drinkCreated  |   id          |  description      |     ./assets/handler.js       |      ./assets/schema.json      | [false] |
+        | M(21) | drink       | drinkCreated  | create       | drinkCreated  |   id          |  description      |     ./assets/handler.js       |      ./assets/schema.json      | [ignore]|
+
 
 #Scenario
     Scenario: 針對data product加入ruleset，重複建立情境
     Given 已有data product "'drink'" enabled "'[true]'"
-    When "'<ProductName>'" 創建ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
+    When "'<ProductName>'" 創建ruleset "'<Ruleset1>'" 使用參數 "'<Method>'" "'<Event1>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
     Then ruleset 創建成功
-    Then 使用gravity-cli 查詢 "'<ProductName>'" 的 "'<Ruleset>'" 存在
-    Then 使用nats jetstream 查詢 "'<ProductName>'" 的 "'<Ruleset>'" 存在，且參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'" 正確
-    When "'<ProductName>'" 創建ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
+    Then 使用gravity-cli 查詢 "'<ProductName>'" 的 "'<Ruleset1>'" 存在
+    Then 使用nats jetstream 查詢 "'<ProductName>'" 的 "'<Ruleset1>'" 存在，且參數 "'<Method>'" "'<Event1>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'" 正確
+    When "'<ProductName>'" 創建ruleset "'<Ruleset2>'" 使用參數 "'<Method>'" "'<Event2>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
     Then ruleset 創建失敗
     # And 應有錯誤訊息 "'<Error_message>'"
     Examples:
-        | ID   | ProductName | Ruleset       | Method  | Event         |   Pk  | Desc             |   Handler_script   |       Schema         | Enabled |  Error_message             |
-        | E1(1)| drink       | drinkCreated  | create  | drinkCreated  |   id  |  "description"   |./assets/handler.js | ./assets/schema.json | [true]  |                            |
-
+        | ID   | ProductName | Ruleset1       | Ruleset2       | Method  | Event1         | Event2         |   Pk  | Desc             |   Handler_script   |       Schema         | Enabled |  Error_message             |
+        | E1(1)| drink       | drinkCreated  | drinkCreated  | create  | drinkCreated  | drinkCreated2  |   id  |  "description"   |./assets/handler.js | ./assets/schema.json | [true]  |                            |
+        | E1(2)| drink       | drinkCreated  | drinkCreated2  | create  | drinkCreated  | drinkCreated  |   id  |  "description"   |./assets/handler.js | ./assets/schema.json | [true]  |                            |
+        				
 #Scenario
     Scenario Outline: 針對data product加入ruleset，失敗情境
     Given 已有data product "'drink'" enabled "'[true]'"
@@ -63,5 +70,6 @@ Scenario:
         | E2(9)  | drink       | drinkCreated  | create       | drinkCreated  |   id     |   description    |     ./assets/not_exist.js   |      ./assets/schema.json         | [true]  |               |  
         | E2(10) | drink       | drinkCreated  | create       | drinkCreated  |   id     |   description    |                 ""          |      ./assets/schema.json         | [true]  |               |  
         | E2(11) | drink       | drinkCreated  | create       | drinkCreated  |   id     |   description    |     ""                      |      ""                           | [true]  |               |
-        | E2(12) | drink       | drinkCreated  | create       | drinkCreated  |   id     |   description    |     ./assets/handler.js     |            not_exist.json         | [true]  |               |  
-        | E2(13) | drink       | drinkCreated  | create       | drinkCreated  |   id     |   description    |     ./assets/handler.js     |      ./assets/fail_schema.json    | [true]  |               |
+        | E2(12) | drink       | drinkCreated  | create       | drinkCreated  |   id     |   description    |     ./assets/BigFile.js     |            schema.json         | [true]  |               |
+        | E2(13) | drink       | drinkCreated  | create       | drinkCreated  |   id     |   description    |     ./assets/handler.js     |            not_exist.json         | [true]  |               |  
+        | E2(14) | drink       | drinkCreated  | create       | drinkCreated  |   id     |   description    |     ./assets/handler.js     |      ./assets/fail_schema.json    | [true]  |               |
