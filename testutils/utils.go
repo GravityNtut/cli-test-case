@@ -222,7 +222,6 @@ func (testUtils *TestUtils) ClearDataProducts() {
 			log.Fatalf(err.Error())
 		}
 	}
-	
 }
 
 func (testUtils *TestUtils) RestartDocker() {

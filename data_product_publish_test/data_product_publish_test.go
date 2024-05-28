@@ -94,7 +94,9 @@ func QueryJetstreamEventExist(event string, payload string) error {
 		log.Fatal(err)
 	}
 	ch := make(chan *nats.Msg, 1)
-	js.ChanSubscribe("$GVT.default.EVENT.*", ch)
+	if _, err := js.ChanSubscribe("$GVT.default.EVENT.*", ch); err != nil {
+		return fmt.Errorf("js get subscribe failed: %v", err)
+	}
 
 	m := <-ch
 	var jsonData JSONData
@@ -125,13 +127,14 @@ func CheckDPStreamDPNotExist(dataProduct string) error {
 	}
 
 	ch := make(chan *nats.Msg, EventCount)
-	
 	sub, err := js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
 	if err != nil {
 		return fmt.Errorf("subscribe failed %s", err.Error())
 	}
 	time.Sleep(1 * time.Second)
-	sub.Unsubscribe()
+	if err := sub.Unsubscribe(); err != nil {
+		return fmt.Errorf("unsubscribe failed %s", err.Error())
+	}
 	if len(ch) != 0 {
 		return fmt.Errorf("預期不會進到GVT_default_DP裡，但是進了")
 	}
@@ -189,7 +192,9 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 		return fmt.Errorf("subscribe failed %s", err.Error())
 	}
 	time.Sleep(1 * time.Second)
-	sub.Unsubscribe()
+	if err := sub.Unsubscribe(); err != nil {
+		return fmt.Errorf("unsubscribe failed %s", err.Error())
+	}
 
 	msg := <-ch
 
@@ -207,11 +212,15 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 
 	JSONByte, err := json.Marshal(r.AsMap())
 	if err != nil {
-		return fmt.Errorf("Recieve payload marshal fail %s", err.Error())
+		return fmt.Errorf("Receive payload marshal fail %s", err.Error())
 	}
 	recieveJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
 	regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payload)[1]
 	regexPayload = ut.FormatJSONData(regexPayload)
+
+	if pe.EventName != event {
+		return errors.New("event 比對不一致")
+	}
 
 	if recieveJSONStringResult != regexPayload {
 		return errors.New("payload 資料不正確")
