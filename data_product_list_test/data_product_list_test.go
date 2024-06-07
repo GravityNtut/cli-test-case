@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	blankString1 = "\"\""
-	blankString2 = "\" \""
+	blankString1 = "[null]"
+	blankString2 = "[space]"
 )
 
 var ut = testutils.TestUtils{}
@@ -46,7 +46,7 @@ func CreateDataProductCommand(productAmount int, dataProduct string, description
 		if i != 0 {
 			dataProductName = dataProductNameBase + "_" + strconv.Itoa(i)
 		}
-		
+
 		// TODO: 空格輸入不合預期
 		if description != testutils.IgnoreString {
 			description = ut.ProcessString(description)
@@ -59,7 +59,12 @@ func CreateDataProductCommand(productAmount int, dataProduct string, description
 				enabledString += "--enabled"
 			}
 		}
-		cmd := exec.Command(testutils.GravityCliString, "product", "create", dataProductName, "--desc", description, "--schema", "./assets/schema.json", enabledString)
+		var cmd *exec.Cmd
+		if description == blankString1 || description == blankString2 {
+			cmd = exec.Command(testutils.GravityCliString, "product", "create", dataProductName, "--schema", "./assets/schema.json", enabledString)
+		} else {
+			cmd = exec.Command(testutils.GravityCliString, "product", "create", dataProductName, "--desc", description, "--schema", "./assets/schema.json", enabledString)
+		}
 		err := cmd.Run()
 		if err != nil {
 			return err
@@ -68,7 +73,7 @@ func CreateDataProductCommand(productAmount int, dataProduct string, description
 	return nil
 }
 
-func AddRulesetCommand(dataProduct string, RulesetAmount int) error {
+func AddRulesetCommand(RulesetAmount int, dataProduct string) error {
 	dataProduct = ut.ProcessString(dataProduct)
 	for i := 0; i < RulesetAmount; i++ {
 		ruleset := dataProduct + "Created"
@@ -101,12 +106,12 @@ func ProductListCommand() error {
 	return ut.ExecuteShell(cmd)
 }
 
-func ProductListCommandSuccess(productAmount int, dataProduct string, description string, enabled string, rulesetAmount string, eventAmount string) error {
+func ProductListCommandSuccess(productAmount int, dataProduct string, rulesetAmount string, eventAmount string, description string, enabled string) error {
 	outStr := ut.CmdResult.Stdout
 
 	outStrList := strings.Split(outStr, "\n")
-	if len(outStrList) != productAmount+3 {
-		return errors.New("Cli回傳訊息ProductAmount錯誤")
+	if len(outStrList) != productAmount+3 { // 2 is header + 1 is the final empty line
+		return errors.New("CLI returns error message: ProductAmount mismatches")
 	}
 
 	if strings.Compare(enabled, testutils.TrueString) == 0 {
@@ -115,35 +120,51 @@ func ProductListCommandSuccess(productAmount int, dataProduct string, descriptio
 		enabled = "disabled"
 	}
 
-	if productAmount > 1 {
-		for i := 1; i < productAmount; i++ {
-			product := outStrList[2+i-1]
-			dataProductName := dataProduct + "_" + strconv.Itoa(i)
-			if !(strings.Contains(product, dataProductName)) {
-				return errors.New("Cli回傳list ProductName錯誤")
-			}
-			if description != blankString1 && description != blankString2 {
-				if !(strings.Contains(product, description)) {
-					return errors.New("Cli回傳list Description錯誤")
-				}
-			}
-			if !(strings.Contains(product, enabled)) {
-				return errors.New("Cli回傳list Enabled錯誤")
-			}
+	for i := 1; i <= productAmount; i++ {
+		product := outStrList[2+i-1]
+		dataProduct = ut.ProcessString(dataProduct)
+		dataProductName := dataProduct
+		if i != productAmount {
+			dataProductName = dataProduct + "_" + strconv.Itoa(i)
 		}
-	} else {
-		product := outStrList[2+productAmount-1]
+
 		productItem := strings.Fields(product)
-		index := 0
-		// TODO:
-		// if description != blankString1 && description != blankString2 {
-			index++
-		// }
-		if productItem[2+index] != rulesetAmount {
-			return errors.New("Cli回傳list RulesetAmount錯誤")
+
+		if productItem[0] != dataProductName {
+			return errors.New("CLI returns error message: list ProductName mismatches")
 		}
-		if productItem[3+index] != eventAmount {
-			return errors.New("Cli回傳list EventAmount錯誤")
+
+		index := 0
+		if description != blankString1 && description != blankString2 {
+			description = ut.ProcessString(description)
+			if productItem[1+index] != description {
+				return errors.New("CLI returns error message: list Description mismatches")
+			}
+			index++
+		}
+
+		if productItem[1+index] != enabled {
+			return errors.New("CLI returns error message: list Enabled mismatches")
+		}
+
+		if i == productAmount {
+			if productItem[2+index] != rulesetAmount {
+				return errors.New("CLI returns error message: list RulesetAmount mismatches")
+			}
+
+			if productItem[3+index] != eventAmount {
+				return errors.New("CLI returns error message: list EventAmount mismatches")
+			}
+
+		} else {
+			if productItem[2+index] != "0" {
+				return errors.New("CLI returns error message: list RulesetAmount mismatches")
+			}
+
+			if productItem[3+index] != "0" {
+				return errors.New("CLI returns error message: list EventAmount mismatches")
+			}
+
 		}
 	}
 
@@ -151,11 +172,18 @@ func ProductListCommandSuccess(productAmount int, dataProduct string, descriptio
 }
 
 func ProductListCommandFail() error {
-	outStr := ut.CmdResult.Stderr
-	if strings.Contains(outStr, "Error: No available products") {
+	if ut.CmdResult.Err != nil {
 		return nil
 	}
-	return errors.New(outStr)
+	return fmt.Errorf("List command should fail")
+}
+
+func CheckError(errMsg string) error {
+	outStr := ut.CmdResult.Stderr
+	if strings.Contains(outStr, errMsg) {
+		return nil
+	}
+	return errors.New(errMsg)
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
@@ -165,13 +193,13 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^創建 "'(.*?)'" 個data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
-	ctx.Given(`^對 "'(.*?)'" 創建 "'(.*?)'" 個ruleset$`, AddRulesetCommand)
-	ctx.Given(`^對Event 做 "'(.*?)'" 次publish$`, PublishProductEvent)
-
-	ctx.When(`^使用 gravity-cli 列出所有 data product$`, ProductListCommand)
-	ctx.Then(`^Cli 回傳 "'(.*?)'" 個data product, 每個data product 裡面的名字為 "'(.*?)'", 描述內容為 "'(.*?)'", Enabled 的狀態為 "'(.*?)'", Ruleset 的數量為 "'(.*?)'" 個, 以及 Event 總共發布 "'(.*?)'" 個$`, ProductListCommandSuccess)
-	ctx.Then(`^Cli 回傳建立失敗$`, ProductListCommandFail)
+	ctx.Given(`^Nats has been opened$`, ut.CheckNatsService)
+	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
+	ctx.Given(`^Create "'(.*?)'" data products with "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
+	ctx.Given(`^Create "'(.*?)'" rulesets for "'(.*?)'"$`, AddRulesetCommand)
+	ctx.Given(`^Publish the event "'(.*?)'" times$`, PublishProductEvent)
+	ctx.When(`^Listing all data products using gravity-cli$`, ProductListCommand)
+	ctx.Then(`^The CLI returns "'(.*?)'" data products. The final product has the name "'(.*?)'", with "'(.*?)'" rulesets, and a total of "'(.*?)'" events published. Each data product has a description of "'(.*?)'" and an enabled status of "'(.*?)'".$`, ProductListCommandSuccess)
+	ctx.Then(`^CLI returns exit code 1$`, ProductListCommandFail)
+	ctx.Then(`^The error message should be "'(.*?)'"$`, CheckError)
 }
