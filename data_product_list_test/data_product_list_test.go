@@ -47,11 +47,9 @@ func CreateDataProductCommand(productAmount int, dataProduct string, description
 			dataProductName = dataProductNameBase + "_" + strconv.Itoa(i)
 		}
 
-		// TODO: 空格輸入不合預期
 		if description != testutils.IgnoreString {
 			description = ut.ProcessString(description)
 		}
-		// [space] [null] 處理, match到就把--desc參數去掉
 
 		enabledString := ""
 		if enabled != testutils.IgnoreString {
