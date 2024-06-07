@@ -15,7 +15,7 @@ services:
       - nats
 
   gravity-dispatcher:
-    image: "ghcr.io/brobridgeorg/gravity/gravity-dispatcher:3de6b01"
+    image: "gravityntut/dispatcher:latest"
     # restart: always
     container_name: "gravity-dispatcher"
     environment:
