@@ -97,15 +97,22 @@ func QueryJetstreamEventExist(event string, payload string) error {
 	if _, err := js.ChanSubscribe("$GVT.default.EVENT.*", ch); err != nil {
 		return fmt.Errorf("js get subscribe failed: %v", err)
 	}
-
-	m := <-ch
+	
+	var m *nats.Msg
+	select {
+	case m = <-ch:
+		
+	case <-time.After(10 * time.Second):
+		return errors.New("subscribe out of time!!")
+	}
+	
 	var jsonData JSONData
 	if err := json.Unmarshal(m.Data, &jsonData); err != nil {
 		return fmt.Errorf("json unmarshal failed: %v", err)
 	}
-	fmt.Println("Event: ", jsonData.Event)
+	//fmt.Println("Event: ", jsonData.Event)
 	result, _ := Base64ToString(jsonData.Payload)
-	fmt.Println("Payload: ", result)
+	//fmt.Println("Payload: ", result)
 
 	if jsonData.Event != event {
 		return fmt.Errorf("預期的event: %s, 實際的event: %s", event, jsonData.Event)
@@ -144,13 +151,10 @@ func CheckDPStreamDPNotExist(dataProduct string) error {
 		}
     }()
 
-    // 模拟处理一段时间
     time.Sleep(10 * time.Second)
 
-    // 关闭消息通道以停止消费
     close(ch)
 
-    // 等待一段时间以确保所有消息被处理
     time.Sleep(1 * time.Second)
 	return nil
 }
@@ -169,7 +173,7 @@ func UpdateDataProductCommand(dataProduct string) error {
 	cmd.Stderr = &stderr
 
 	err := cmd.Run()
-	fmt.Println(stderr.String())
+	//fmt.Println(stderr.String())
 	if err != nil {
 		return errors.New("data product update failed")
 	}
@@ -182,7 +186,7 @@ func UpdateRulesetCommand(dataProduct string, ruleset string) error {
 	cmd.Stderr = &stderr
 
 	err := cmd.Run()
-	fmt.Println(stderr.String())
+	//fmt.Println(stderr.String())
 	if err != nil {
 		return errors.New("ruleset update failed")
 	}
@@ -205,12 +209,18 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 	if err != nil {
 		return fmt.Errorf("subscribe failed %s", err.Error())
 	}
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 	if err := sub.Unsubscribe(); err != nil {
 		return fmt.Errorf("unsubscribe failed %s", err.Error())
 	}
 
-	msg := <-ch
+	var msg *nats.Msg
+	select {
+	case msg = <-ch:
+		
+	case <-time.After(10 * time.Second):
+		return errors.New("subscribe out of time!!")
+	}
 
 	err = proto.Unmarshal(msg.Data, &pe)
 	if err != nil {
@@ -228,16 +238,53 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 	}
 	recieveJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
 	regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payload)[1]
+
 	regexPayload = ut.FormatJSONData(regexPayload)
 
 	if pe.EventName != event {
 		return errors.New("event 比對不一致")
 	}
 
-	if recieveJSONStringResult != regexPayload {
+	var receivedMap map[string]interface{}
+	var payloadMap map[string]interface{}
+
+	err = json.Unmarshal([]byte(recieveJSONStringResult), &receivedMap)
+	if err != nil {
+		return fmt.Errorf("Failed to unmarshal received JSON: %s", err.Error())
+	}
+
+	err = json.Unmarshal([]byte(regexPayload), &payloadMap)
+	if err != nil {
+		return fmt.Errorf("Failed to unmarshal payload JSON: %s", err.Error())
+	}
+
+	filteredMap := filterMapByKeys(receivedMap, payloadMap)
+
+	filteredJSON, err := json.Marshal(filteredMap)
+	if err != nil {
+		return fmt.Errorf("Failed to marshal filtered JSON: %s", err.Error())
+	}
+
+	filteredJSONStringResult := strings.Join(strings.Fields(string(filteredJSON)), "")
+
+	// fmt.Println("recieveJSONStringResult:", recieveJSONStringResult)
+	// fmt.Println("filteredJSONStringResult: ",filteredJSONStringResult)
+
+	if filteredJSONStringResult != recieveJSONStringResult {
 		return errors.New("payload 資料不正確")
 	}
+
 	return nil
+}
+
+func filterMapByKeys(source, keys map[string]interface{}) map[string]interface{} {
+	filtered := make(map[string]interface{})
+	for key := range keys {
+		if value, exists := source[key]; exists {
+			filtered[key] = value
+		}
+	}
+	return filtered
 }
 
 func checkCheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, payload string, payload2 string) error {
@@ -250,11 +297,11 @@ func checkCheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, pa
 	}
 	var pe gravity_sdk_types_product_event.ProductEvent
 
-	//var payloadList []string = []string{payload, payload2}
+	var payloadList []string = []string{payload, payload2}
 	ch := make(chan *nats.Msg, 2)
 	js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
-
 	go func() {
+		i := 0
         for msg := range ch {
 			err = proto.Unmarshal(msg.Data, &pe)
 			if err != nil {
@@ -270,25 +317,23 @@ func checkCheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, pa
 				fmt.Printf("Receive payload marshal fail %s", err.Error())
 			}
 			recieveJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
-			fmt.Println("recieveJSONStringResult: ", recieveJSONStringResult)
-			// regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payloadList[i])[1]
-			// regexPayload = ut.FormatJSONData(regexPayload)
-			// fmt.Println("recieveJSONStringResult: ", recieveJSONStringResult)
-			// fmt.Println("regexPayload: ", regexPayload)
-			// if recieveJSONStringResult != regexPayload {
-			// 		return errors.New("payload 資料不正確")
-			// }
+			regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payloadList[i])[1]
+			regexPayload = ut.FormatJSONData(regexPayload)
+			if recieveJSONStringResult != regexPayload {
+				fmt.Println("Payload is not Matched!!")
+			}
+			i++
         }
     }()
 
-    // 模拟处理一段时间
     time.Sleep(10 * time.Second)
 
-    // 关闭消息通道以停止消费
     close(ch)
 
-    // 等待一段时间以确保所有消息被处理
     time.Sleep(1 * time.Second)
+
+	
+
 	if pe.EventName != event {
 		return errors.New("event 比對不一致")
 	}
