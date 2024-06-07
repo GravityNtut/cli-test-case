@@ -40,23 +40,26 @@ func TestFeatures(t *testing.T) {
 }
 
 func CreateDataProductCommand(productAmount int, dataProduct string, description string, enabled string) error {
-	var dataProductName string
-	dataProductName = ut.ProcessString(dataProduct)
+	dataProductNameBase := ut.ProcessString(dataProduct)
+	dataProductName := dataProductNameBase
 	for i := 0; i < productAmount; i++ {
 		if i != 0 {
-			dataProductName = dataProduct + "_" + strconv.Itoa(i)
+			dataProductName = dataProductNameBase + "_" + strconv.Itoa(i)
 		}
+		
+		// TODO: 空格輸入不合預期
 		if description != testutils.IgnoreString {
 			description = ut.ProcessString(description)
 		}
+		// [space] [null] 處理, match到就把--desc參數去掉
 
 		enabledString := ""
 		if enabled != testutils.IgnoreString {
 			if enabled == testutils.TrueString {
-				enabledString += " --enabled"
+				enabledString += "--enabled"
 			}
 		}
-		cmd := exec.Command("../gravity-cli", "product", "create", dataProductName, "--desc", description, "--schema", "./assets/schema.json", enabledString)
+		cmd := exec.Command(testutils.GravityCliString, "product", "create", dataProductName, "--desc", description, "--schema", "./assets/schema.json", enabledString)
 		err := cmd.Run()
 		if err != nil {
 			return err
@@ -72,8 +75,7 @@ func AddRulesetCommand(dataProduct string, RulesetAmount int) error {
 		if i != 0 {
 			ruleset += strconv.Itoa(i)
 		}
-		event := "--event " + ruleset
-		cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--event", ruleset, "--enabled", event, "--method", "create", "--schema", "./assets/schema.json", "--pk", "id")
+		cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--event", ruleset, "--enabled", "--method", "create", "--schema", "./assets/schema.json", "--pk", "id")
 		err := cmd.Run()
 		if err != nil {
 			return errors.New(cmd.String())
@@ -95,7 +97,7 @@ func PublishProductEvent(eventAmount int) error {
 }
 
 func ProductListCommand() error {
-	const cmd = "../gravity-cli product list"
+	cmd := testutils.GravityCliString + " product list"
 	return ut.ExecuteShell(cmd)
 }
 
@@ -133,9 +135,10 @@ func ProductListCommandSuccess(productAmount int, dataProduct string, descriptio
 		product := outStrList[2+productAmount-1]
 		productItem := strings.Fields(product)
 		index := 0
-		if description != blankString1 && description != blankString2 {
+		// TODO:
+		// if description != blankString1 && description != blankString2 {
 			index++
-		}
+		// }
 		if productItem[2+index] != rulesetAmount {
 			return errors.New("Cli回傳list RulesetAmount錯誤")
 		}
@@ -162,12 +165,13 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
-	ctx.When(`^創建 "'(.*?)'" 個 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
-	ctx.When(`^對"'(.*?)'" 創建 "'(.*?)'" 個 ruleset$`, AddRulesetCommand)
-	ctx.When(`^對Event做 "'(.*?)'" 次 publish$`, PublishProductEvent)
-	ctx.When(`^使用gravity-cli 列出所有 data product$`, ProductListCommand)
-	ctx.Then(`^Cli 回傳 "'(.*?)'" 個 data product, 每個 data product 裡面的名字為 "'(.*?)'", 描述內容為 "'(.*?)'", Enabled 的狀態為 "'(.*?)'", Ruleset 的數量為 "'(.*?)'" 個, 以及 Event 總共發布 "'(.*?)'" 個 $`, ProductListCommandSuccess)
-	ctx.Then(`^回傳 Error: No available products$`, ProductListCommandFail)
+	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
+	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
+	ctx.Given(`^創建 "'(.*?)'" 個data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
+	ctx.Given(`^對 "'(.*?)'" 創建 "'(.*?)'" 個ruleset$`, AddRulesetCommand)
+	ctx.Given(`^對Event 做 "'(.*?)'" 次publish$`, PublishProductEvent)
+
+	ctx.When(`^使用 gravity-cli 列出所有 data product$`, ProductListCommand)
+	ctx.Then(`^Cli 回傳 "'(.*?)'" 個data product, 每個data product 裡面的名字為 "'(.*?)'", 描述內容為 "'(.*?)'", Enabled 的狀態為 "'(.*?)'", Ruleset 的數量為 "'(.*?)'" 個, 以及 Event 總共發布 "'(.*?)'" 個$`, ProductListCommandSuccess)
+	ctx.Then(`^Cli 回傳建立失敗$`, ProductListCommandFail)
 }
