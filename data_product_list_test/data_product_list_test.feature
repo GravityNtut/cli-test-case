@@ -13,7 +13,7 @@ Scenario:
     Examples:
         |  ID   | ProductName | Description | Enabled | RulesetAmount | EventAmount | ProductAmount |
         |  M(1) | [a]x240     | description | [false] | 0             | 0           | 1             | 
-        |  M(2) | drink         |     ""      | [true]  | 1             | 1           | 100           |
+        |  M(2) | drink       |     ""      | [true]  | 1             | 1           | 100           |
         |  M(3) | drink       |     " "     | [true]  | 1             | 100         | 1             | 
         |  M(4) | drink       |  [a]x32768  | [true]  | 0             | 0           | 1             |
 
