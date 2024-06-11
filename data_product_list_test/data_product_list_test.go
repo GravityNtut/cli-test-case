@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"test-case/testutils"
@@ -14,8 +15,8 @@ import (
 )
 
 const (
-	blankString1 = "[null]"
-	blankString2 = "[space]"
+	nullString  = `""`
+	blankString = `" "`
 )
 
 var ut = testutils.TestUtils{}
@@ -58,11 +59,12 @@ func CreateDataProductCommand(productAmount int, dataProduct string, description
 			}
 		}
 		var cmd *exec.Cmd
-		if description == blankString1 || description == blankString2 {
-			cmd = exec.Command(testutils.GravityCliString, "product", "create", dataProductName, "--schema", "./assets/schema.json", enabledString)
-		} else {
-			cmd = exec.Command(testutils.GravityCliString, "product", "create", dataProductName, "--desc", description, "--schema", "./assets/schema.json", enabledString)
-		}
+		description := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(description)[1] //移除雙引號
+		// if description == nullString || description == blankString {
+		// cmd = exec.Command(testutils.GravityCliString, "product", "create", dataProductName, "--schema", "./assets/schema.json", enabledString)
+		// } else {
+		cmd = exec.Command(testutils.GravityCliString, "product", "create", dataProductName, "--desc", description, "--schema", "./assets/schema.json", enabledString)
+		// }
 		err := cmd.Run()
 		if err != nil {
 			return err
@@ -133,7 +135,7 @@ func ProductListCommandSuccess(productAmount int, dataProduct string, rulesetAmo
 		}
 
 		index := 0
-		if description != blankString1 && description != blankString2 {
+		if description != nullString && description != blankString {
 			description = ut.ProcessString(description)
 			if productItem[1+index] != description {
 				return errors.New("CLI returns error message: list Description mismatches")
