@@ -171,7 +171,7 @@ func ProductListCommandFail() error {
 	if ut.CmdResult.Err != nil {
 		return nil
 	}
-	return fmt.Errorf("List command should fail")
+	return fmt.Errorf("list command should fail")
 }
 
 func CheckError(errMsg string) error {
@@ -189,13 +189,13 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	ctx.Given(`^Nats has been opened$`, ut.CheckNatsService)
+	ctx.Given(`^NATS has been opened$`, ut.CheckNatsService)
 	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
 	ctx.Given(`^Create "'(.*?)'" data products with "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
 	ctx.Given(`^Create "'(.*?)'" rulesets for "'(.*?)'"$`, AddRulesetCommand)
 	ctx.Given(`^Publish the event "'(.*?)'" times$`, PublishProductEvent)
 	ctx.When(`^Listing all data products using gravity-cli$`, ProductListCommand)
-	ctx.Then(`^The CLI returns "'(.*?)'" data products. The final product has the name "'(.*?)'", with "'(.*?)'" rulesets, and a total of "'(.*?)'" events published. Each data product has a description of "'(.*?)'" and an enabled status of "'(.*?)'".$`, ProductListCommandSuccess)
+	ctx.Then(`^The CLI returns "'(.*?)'" data products. The final product has the name "'(.*?)'", with "'(.*?)'" rulesets, and a total of "'(.*?)'" events published. Each data product has a description of "'(.*?)'" and an enabled status of "'(.*?)'"$`, ProductListCommandSuccess)
 	ctx.Then(`^CLI returns exit code 1$`, ProductListCommandFail)
 	ctx.Then(`^The error message should be "'(.*?)'"$`, CheckError)
 }
