@@ -105,7 +105,7 @@ func DisplayData() error {
 
 func PublishProductEvent() error {
 	EventCount = 10
-	// 生成7筆id為87的事件
+	// Generate 7 events witch id is 87
 	for i := 1; i <= EventCount-3; i++ {
 		result := fmt.Sprintf(`{"id":87, "name":"test%d", "kcal":%d, "price":%d}`, i, i*100, i+20)
 		cmd := exec.Command(testutils.GravityCliString, "pub", Event, result, "-s", ut.Config.JetstreamURL)
@@ -113,7 +113,7 @@ func PublishProductEvent() error {
 			return fmt.Errorf("publish event failed: %s", err.Error())
 		}
 	}
-	// 生成3筆id為99的事件
+	// Generate 3 events witch id is 99
 	for i := EventCount - 2; i <= EventCount; i++ {
 		result := fmt.Sprintf(`{"id":99, "name":"test%d", "kcal":%d, "price":%d}`, i, i*300, i+30)
 		cmd := exec.Command(testutils.GravityCliString, "pub", Event, result, "-s", ut.Config.JetstreamURL)
@@ -125,7 +125,7 @@ func PublishProductEvent() error {
 }
 
 func CreateDataProduct(dataProduct string) error {
-	decription := "drink資料"
+	decription := "drink data"
 	schema := "./assets/schema.json"
 	enabled := "true"
 	cmd := exec.Command(testutils.GravityCliString, "product", "create", dataProduct, "--desc", decription, "--schema", schema, "--enabled="+enabled, "-s", ut.Config.JetstreamURL)
@@ -143,7 +143,7 @@ var ExpectPartition []string
 
 const Method string = "create"
 const Pk string = "id"
-const RulesetDesc string = "drink創建事件"
+const RulesetDesc string = "drink create event"
 const Handler string = "./assets/handler.js"
 const Schema string = "./assets/schema.json"
 const Enabled string = "true"
@@ -166,7 +166,7 @@ func ValidateSubResult(partitionString string, seqString string) error {
 	if seqString != testutils.IgnoreString {
 		seq, err = strconv.ParseUint(seqString, 10, 64)
 		if err != nil {
-			return fmt.Errorf("轉換seq成uint失敗: %s", err.Error())
+			return fmt.Errorf("fail from covert seq to uint: %s", err.Error())
 		}
 	}
 	resultStringList := FindJSON(ut.CmdResult.Stdout)
@@ -190,7 +190,7 @@ func ValidateSubResult(partitionString string, seqString string) error {
 	}
 
 	if uint64(len(resultStringList)) != numbersOfEvents {
-		errString := fmt.Sprintf("Event數量與發佈數量不符合, 預期數量: %d, 獲取數量: %d", numbersOfEvents, len(resultStringList))
+		errString := fmt.Sprintf("The number of retrieved events differs from the number of published events., Expect: %d, Retrieve: %d", numbersOfEvents, len(resultStringList))
 		return errors.New(errString)
 	}
 	for i, jsonData := range resultStringList {
@@ -236,7 +236,7 @@ func ValidateSubResult(partitionString string, seqString string) error {
 				return err
 			}
 		}
-		// 功能要修改，暫時先不測
+		// The seq is to be modified in the future, so we will not check it for now.
 		// if err := ut.AssertUIntEqual(UnmarshalResult.Seq, i+1); err != nil {
 		// 	return err
 		// }
@@ -249,7 +249,7 @@ func ValidateSubResult(partitionString string, seqString string) error {
 
 func SubCommandFail() error {
 	if ut.CmdResult.Err == nil || ut.CmdResult.Err.(*exec.ExitError).ExitCode() == 124 {
-		return errors.New("使用該指令應該要失敗")
+		return errors.New("This command should be failed.")
 	}
 	return nil
 }
@@ -260,13 +260,13 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有 data product "'(.*?)'"$`, CreateDataProduct)
-	ctx.Given(`^已有 data product 的 ruleset "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
-	ctx.Given(`^已 publish 10 筆 Event$`, PublishProductEvent)
-	ctx.Given(`^設定訂閱 Timeout 為 "'(.*?)'" 秒$`, SetTimeout)
-	ctx.When(`^訂閱 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'"`, SubscribeDataProductCommand)
-	ctx.Then(`^Cli 回傳 "'(.*?)'" 內 "'(.*?)'" 後所有事件資料$`, ValidateSubResult)
-	ctx.Then(`^Cli 回傳指令失敗$`, SubCommandFail)
+	ctx.Given(`^NATS has been opened$`, ut.CheckNatsService)
+	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
+	ctx.Given(`^Create data product "'([^'"]*?)'"$`, CreateDataProduct)
+	ctx.Given(`^Create data product "'([^'"]*?)'" with ruleset "'([^'"]*?)'"$`, CreateDataProductRuleset)
+	ctx.Given(`^Publish 10 Events$`, PublishProductEvent)
+	ctx.Given(`^Set subscribe Timeout with "'(.*?)'" seconnd$`, SetTimeout)
+	ctx.When(`^Subscribe data product "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'" "'(.*?)'"`, SubscribeDataProductCommand)
+	ctx.Then(`^The CLI returns all events data within the "'(.*?)'" and after "'(.*?)'"$`, ValidateSubResult)
+	ctx.Then(`^The CLI returns exit code 1$`, SubCommandFail)
 }

@@ -1,16 +1,16 @@
-Feature: Data Product puiblish 
+Feature: Data Product subscribe 
 
 Scenario:
-Given 已開啟服務 nats
-Given 已開啟服務 dispatcher
+Given NATS has been opened
+Given Dispatcher has been opened
 #Scenario
-	Scenario: 使用product sub指令來接收已publish到該data product的所有資料成功情境
-	Given 已有 data product "'drink'"
-    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'"
-    Given 已 publish 10 筆 Event
-    Given 設定訂閱 Timeout 為 "'1'" 秒
-    When 訂閱 data product "'<ProductName>'" 使用參數 "'<SubName>'" "'<Partitions>'" "'<Seq>'"
-    Then Cli 回傳 "'<Partitions>'" 內 "'<Seq>'" 後所有事件資料
+	Scenario:  Successful scenario. Use the `product sub` command to receive all data published to the specified data product.
+	Given Create data product "'drink'"
+    Given Create data product "'drink'" with ruleset "'drinkCreated'"
+    Given Publish 10 Events
+    Given Set subscribe Timeout with "'1'" seconnd
+    When Subscribe data product "'<ProductName>'" using parameters "'<SubName>'" "'<Partitions>'" "'<Seq>'"
+    Then The CLI returns all events data within the "'<Partitions>'" and after "'<Seq>'"
     Examples:
     |  ID  | ProductName | SubName |   Partitions   |      Seq      |
     | M(1) |   drink     |         |      -1        |       1       |
@@ -28,12 +28,12 @@ Given 已開啟服務 dispatcher
     | M(13)|   drink     |         |      -1        |       5       |
 
 #Scenario
-	Scenario: 使用product sub指令來接收已publish到該data product的所有資料失敗情境
-    Given 已有 data product "'drink'"
-    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'"
-    Given 已 publish 10 筆 Event
-    When 訂閱 data product "'<ProductName>'" 使用參數 "'<SubName>'" "'<Partitions>'" "'<Seq>'"
-    Then Cli 回傳指令失敗
+	Scenario: Failure scenario. Use the `product sub` command to receive all data published to the specified data product.
+	Given Create data product "'drink'"
+    Given Create data product "'drink'" with ruleset "'drinkCreated'"
+    Given Publish 10 Events
+    When Subscribe data product "'<ProductName>'" using parameters "'<SubName>'" "'<Partitions>'" "'<Seq>'"
+    Then The CLI returns exit code 1
     Examples:
     |   ID   | ProductName | SubName    |   Partitions   |      Seq      |
     |  E1(1) |   notExist  |            |      -1        |       1       |
