@@ -22,6 +22,7 @@ import (
 )
 
 var ut = testutils.TestUtils{}
+var lastScenarioName string
 
 func TestFeatures(t *testing.T) {
 	err := ut.LoadConfig()
@@ -42,7 +43,7 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
-func CreateDataProductRuleset(dataProduct string, ruleset string, RSMethod string, event string, RSPk string, RSHandler string, RSSchema string, RSEnabled string) error {
+func CreateDataProductRuleset(dataProduct string, ruleset string, RSMethod string, RSPk string, RSHandler string, RSSchema string, RSEnabled string) error {
 
 	if RSEnabled == testutils.TrueString {
 		RSEnabled = "true"
@@ -51,7 +52,14 @@ func CreateDataProductRuleset(dataProduct string, ruleset string, RSMethod strin
 	} else {
 		return errors.New("Enable 必須要[true] 或 [false]")
 	}
-	cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--event", event, "--method", RSMethod, "--pk", RSPk, "--handler", RSHandler, "--schema", RSSchema, "--enabled="+RSEnabled, "-s", ut.Config.JetstreamURL)
+
+	if RSHandler == testutils.IgnoreString {
+		RSHandler = ""
+	} else {
+		RSHandler = "--handler=" + RSHandler;
+	}
+
+	cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--event", ruleset, "--method", RSMethod, "--pk", RSPk, RSHandler, "--schema", RSSchema, "--enabled="+RSEnabled, "-s", ut.Config.JetstreamURL)
 	err := cmd.Run()
 	if err != nil {
 		return errors.New("data product add ruleset failed")
@@ -135,27 +143,19 @@ func CheckDPStreamDPNotExist(dataProduct string) error {
 
 	ch := make(chan *nats.Msg, EventCount)
 	sub, err := js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
-	go func() {
-		for msg := range ch {
-			if err != nil {
-				fmt.Printf("subscribe failed %s", err.Error())
-			}
-			time.Sleep(1 * time.Second)
-			if err := sub.Unsubscribe(); err != nil {
-				fmt.Printf("unsubscribe failed %s", err.Error())
-			}
-			if len(ch) != 0 {
-				fmt.Printf("預期不會進到GVT_default_DP裡，但是進了")
-			}
-			fmt.Println("msg: ", msg)
-		}
-    }()
-
-    time.Sleep(10 * time.Second)
-
-    close(ch)
-
-    time.Sleep(1 * time.Second)
+	if err != nil {
+		return fmt.Errorf("subscribe failed %s", err.Error())
+	}
+	
+	select {
+	case <-ch:
+		return fmt.Errorf("預期不會進到GVT_default_DP裡，但是進了")
+	case <-time.After(5 * time.Second):
+		
+	}
+	if err := sub.Unsubscribe(); err != nil {
+		return fmt.Errorf("unsubscribe failed %s", err.Error())
+	}
 	return nil
 }
 
@@ -215,21 +215,22 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 	}
 
 	var msg *nats.Msg
+
 	select {
 	case msg = <-ch:
 		
 	case <-time.After(10 * time.Second):
 		return errors.New("subscribe out of time!!")
 	}
-
+	
 	err = proto.Unmarshal(msg.Data, &pe)
 	if err != nil {
-		fmt.Printf("Failed to parsing product event: %v", err)
+		return fmt.Errorf("Failed to parsing product event: %v", err)
 	}
 
 	r, err := pe.GetContent()
 	if err != nil {
-		fmt.Printf("Failed to parsing content: %v", err)
+		return fmt.Errorf("Failed to parsing content: %v", err)
 	}
 
 	JSONByte, err := json.Marshal(r.AsMap())
@@ -287,7 +288,7 @@ func filterMapByKeys(source, keys map[string]interface{}) map[string]interface{}
 	return filtered
 }
 
-func checkCheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, payload string, payload2 string) error {
+func CheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, payload string, payload2 string) error {
 	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
@@ -298,6 +299,9 @@ func checkCheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, pa
 	var pe gravity_sdk_types_product_event.ProductEvent
 
 	var payloadList []string = []string{payload, payload2}
+
+	channel := make(chan error)
+
 	ch := make(chan *nats.Msg, 2)
 	js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
 	go func() {
@@ -305,34 +309,35 @@ func checkCheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, pa
         for msg := range ch {
 			err = proto.Unmarshal(msg.Data, &pe)
 			if err != nil {
-				fmt.Printf("Failed to parsing product event: %v", err)
+				channel <- fmt.Errorf("Failed to parsing product event: %v", err)
 			}
 
 			r, err := pe.GetContent()
 			if err != nil {
-				fmt.Printf("Failed to parsing content: %v", err)
+				channel <- fmt.Errorf("Failed to parsing content: %v", err)
 			}
 			JSONByte, err := json.Marshal(r.AsMap())
 			if err != nil {
-				fmt.Printf("Receive payload marshal fail %s", err.Error())
+				channel <- fmt.Errorf("Receive payload marshal fail %s", err.Error())
 			}
 			recieveJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
 			regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payloadList[i])[1]
 			regexPayload = ut.FormatJSONData(regexPayload)
 			if recieveJSONStringResult != regexPayload {
-				fmt.Println("Payload is not Matched!!")
+				channel <- fmt.Errorf("Payload is not Matched!!")
 			}
 			i++
         }
+		channel <- nil
     }()
 
     time.Sleep(10 * time.Second)
 
     close(ch)
 
-    time.Sleep(1 * time.Second)
-
-	
+	if err := <-channel; err != nil {
+		return err
+	}
 
 	if pe.EventName != event {
 		return errors.New("event 比對不一致")
@@ -349,20 +354,26 @@ func PublishEventCommandFailed() error {
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
-	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
+	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
 		ut.ClearDataProducts()
+		if lastScenarioName != "" && lastScenarioName != sc.Name {
+			// The scenario has changed, so we restart Docker.
+			ut.RestartDocker()
+		}
+		lastScenarioName = sc.Name
 		return ctx, nil
 	})
 	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
 	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
 	ctx.Given(`^創建 data product "'(.*?)'" 使用參數 "'(.*?)'"$`, ut.CreateDataProduct)
-	ctx.Given(`^"'(.*?)'" 創建 ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
+	ctx.Given(`^"'(.*?)'" 創建 ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
 	ctx.When(`^publish Event "'(.*?)'" 使用參數 "'(.*?)'"$`, PublishEventCommand)
 	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡有 "'(.*?)'" 帶有 "'(.*?)'"$`, CheckDPStreamDPExist)
 	ctx.Then(`^使用 nats jetstream 查詢 GVT_default "'(.*?)'" 帶有 "'(.*?)'"$`, QueryJetstreamEventExist)
 	ctx.When(`^更新 data product "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateDataProductCommand)
 	ctx.When(`^更新 data product "'([^'"]*?)'" 的 ruleset "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateRulesetCommand)
 	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡沒有 "'(.*?)'"$`, CheckDPStreamDPNotExist)
-	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡是否有兩筆 "'(.*?)'" 帶有 "'(.*?)'" 與 "'(.*?)'"$`, checkCheckDPStreamDPEventHasTwoPayload)
+	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡是否有兩筆 "'(.*?)'" 帶有 "'(.*?)'" 與 "'(.*?)'"$`, CheckDPStreamDPEventHasTwoPayload)
 	ctx.Then(`^Cli 回傳建立失敗$`, PublishEventCommandFailed)
+	ctx.Then(`^Restart Docker$`, ut.RestartDocker)
 }
