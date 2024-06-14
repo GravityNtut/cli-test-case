@@ -53,7 +53,7 @@ func CreateDataProductCommand(dataProduct string, description string, schema str
 	} else if enabled == testutils.FalseString {
 		commandString += " --enabled=false"
 	} else if enabled != testutils.IgnoreString {
-		return errors.New("enabled 參數錯誤")
+		return errors.New("Invalid parameter for enable")
 	}
 	commandString += " -s " + ut.Config.JetstreamURL
 	err := ut.ExecuteShell(commandString)
@@ -69,14 +69,14 @@ func CreateDataProductCommandSuccess(productName string) error {
 	if outStr == "Product \""+productName+"\" was created\n" {
 		return nil
 	}
-	return errors.New("Cli回傳訊息錯誤")
+	return errors.New("The message returned by the CLI is incorrect")
 }
 
 func CreateDataProductCommandFail() error {
 	if ut.CmdResult.Err != nil {
 		return nil
 	}
-	return errors.New("Cli回傳訊息錯誤")
+	return errors.New("The message returned by the CLI is incorrect")
 }
 
 func SearchDataProductByCLISuccess(dataProduct string) error {
@@ -103,7 +103,7 @@ func SearchDataProductByJetstreamSuccess(dataProduct string) error {
 			return nil
 		}
 	}
-	return errors.New("jetstream裡未創建成功")
+	return errors.New("Data product creation in Jetstream was unsuccessful")
 }
 
 // TODO
@@ -118,12 +118,12 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
-	ctx.When(`^創建 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
-	ctx.Then(`^Cli 回傳 "'(.*?)'" 建立成功$`, CreateDataProductCommandSuccess)
-	ctx.Then(`^Cli 回傳建立失敗$`, CreateDataProductCommandFail)
-	ctx.Then(`^使用 gravity-cli 查詢 "'(.*?)'" 存在$`, SearchDataProductByCLISuccess)
-	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 存在$`, SearchDataProductByJetstreamSuccess)
-	// ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
+	ctx.Given(`^NATS has been opened$`, ut.CheckNatsService)
+	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
+	ctx.When(`^Create data product "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
+	ctx.Then(`^Cli returns "'(.*?)'" created successfully$`, CreateDataProductCommandSuccess)
+	ctx.Then(`^CLI returns exit code 1$`, CreateDataProductCommandFail)
+	ctx.Then(`^Using gravity-cli to query "'(.*?)'" shows it exist.$`, SearchDataProductByCLISuccess)
+	ctx.Then(`^Using NATS Jetstream to query "'(.*?)'" shows it exist.$`, SearchDataProductByJetstreamSuccess)
+	// ctx.Then(`^The error message should be "'(.*?)'"$`, AssertErrorMessages)
 }
