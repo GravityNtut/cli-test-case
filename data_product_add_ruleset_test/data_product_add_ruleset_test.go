@@ -105,7 +105,7 @@ func AddRulesetCommand(dataProduct string, ruleset string, method string, event 
 	} else if enabled == testutils.FalseString {
 		commandString += " --enabled=false"
 	} else if enabled != testutils.IgnoreString {
-		return errors.New("enabled 參數錯誤")
+		return errors.New("enabled parameter incorrect")
 	}
 	commandString += " -s " + ut.Config.JetstreamURL
 	err := ut.ExecuteShell(commandString)
@@ -119,14 +119,14 @@ func AddRulesetCommandFailed() error {
 	if ut.CmdResult.Err != nil {
 		return nil
 	}
-	return fmt.Errorf("ruleset 創建應該要失敗")
+	return fmt.Errorf("add ruleset should fail")
 }
 
 func AddRulesetCommandSuccess() error {
 	if ut.CmdResult.Err == nil {
 		return nil
 	}
-	return fmt.Errorf("ruleset 創建應該要成功")
+	return fmt.Errorf("add ruleset should success")
 }
 
 func SearchRulesetByCLISuccess(dataProduct string, ruleset string) error {
@@ -150,7 +150,7 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 	entry, _ := kv.Get(dataProduct)
 	err = json.Unmarshal((entry.Value()), &jsonData)
 	if err != nil {
-		fmt.Println("解碼 JSON 時出現錯誤:", err)
+		fmt.Println("error occurred while decoding JSON: ", err)
 		return err
 	}
 	ruleset = ut.ProcessString(ruleset)
@@ -161,7 +161,7 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 
 	if ruleset != testutils.NullString {
 		if ruleset != jsonData.Rules[ruleset].Name {
-			return errors.New("ruleset 與 nats 資訊不符")
+			return errors.New("ruleset does not match the information in NATS")
 		}
 	}
 
@@ -198,7 +198,7 @@ func SearchRulesetByNatsSuccess(dataProduct string, ruleset string, method strin
 // 		return nil
 // 	}
 // TODO
-// 	return fmt.Errorf("應有錯誤訊息: %s", expected)
+// 	return fmt.Errorf("the error message should be: %s", expected)
 // }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
@@ -207,13 +207,13 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		ut.ClearDataProducts()
 		return ctx, nil
 	})
-	ctx.Given(`^已開啟服務nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有data product "'(.*?)'" enabled "'(.*?)'"$`, ut.CreateDataProduct)
-	ctx.When(`^"'(.*?)'" 創建ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, AddRulesetCommand)
-	ctx.Then(`^ruleset 創建失敗$`, AddRulesetCommandFailed)
-	ctx.Then(`^ruleset 創建成功$`, AddRulesetCommandSuccess)
-	ctx.Then(`^使用gravity-cli 查詢 "'(.*?)'" 的 "'(.*?)'" 存在$`, SearchRulesetByCLISuccess)
-	ctx.Then(`使用nats jetstream 查詢 "'(.*?)'" 的 "'(.*?)'" 存在，且參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" 正確$`, SearchRulesetByNatsSuccess)
-	// ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
+	ctx.Given(`^NATS has been opened$`, ut.CheckNatsService)
+	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
+	ctx.Given(`^Create data product "'(.*?)'" and enabled is "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.When(`^"'(.*?)'" add ruleset "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, AddRulesetCommand)
+	ctx.Then(`^CLI returns exit code 1$`, AddRulesetCommandFailed)
+	ctx.Then(`^Add ruleset success$`, AddRulesetCommandSuccess)
+	ctx.Then(`^Use gravity-cli to query the "'(.*?)'" 's "'(.*?)'" exists$`, SearchRulesetByCLISuccess)
+	ctx.Then(`^Use NATS jetstream to query the "'(.*?)'" 's "'(.*?)'" exists and parameters "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" are correct$`, SearchRulesetByNatsSuccess)
+	// ctx.Then(`^The error message should be "'(.*?)'"$`, AssertErrorMessages)
 }
