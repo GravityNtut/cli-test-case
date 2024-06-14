@@ -49,7 +49,7 @@ func CreateDataProductRuleset(dataProduct string, ruleset string, RSMethod strin
 	} else if RSEnabled == testutils.FalseString {
 		RSEnabled = "false"
 	} else {
-		return errors.New("Enable 必須要[true] 或 [false]")
+		return errors.New("Enable must be [true] or [false]")
 	}
 
 	if RSHandler == testutils.IgnoreString {
@@ -122,10 +122,10 @@ func QueryJetstreamEventExist(event string, payload string) error {
 	//fmt.Println("Payload: ", result)
 
 	if jsonData.Event != event {
-		return fmt.Errorf("預期的event: %s, 實際的event: %s", event, jsonData.Event)
+		return fmt.Errorf("expected event: %s, actual event: %s", event, jsonData.Event)
 	}
 	if result != payload {
-		return fmt.Errorf("預期的payload: %s, 實際的payload: %s", payload, result)
+		return fmt.Errorf("expected payload: %s, actual payload: %s", payload, result)
 	}
 	return nil
 }
@@ -148,7 +148,7 @@ func CheckDPStreamDPNotExist(dataProduct string) error {
 
 	select {
 	case <-ch:
-		return fmt.Errorf("預期不會進到GVT_default_DP裡，但是進了")
+		return fmt.Errorf("expected not publish in GVT_default_DP，but now in GVT_default_DP")
 	case <-time.After(5 * time.Second):
 
 	}
@@ -242,7 +242,7 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 	regexPayload = ut.FormatJSONData(regexPayload)
 
 	if pe.EventName != event {
-		return errors.New("event 比對不一致")
+		return errors.New("event is not matched")
 	}
 
 	var receivedMap map[string]interface{}
@@ -271,7 +271,7 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 	// fmt.Println("filteredJSONStringResult: ",filteredJSONStringResult)
 
 	if filteredJSONStringResult != recieveJSONStringResult {
-		return errors.New("payload 資料不正確")
+		return errors.New("payload is not matched")
 	}
 
 	return nil
@@ -331,7 +331,7 @@ func CheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, payload
 			regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payloadList[i])[1]
 			regexPayload = ut.FormatJSONData(regexPayload)
 			if recieveJSONStringResult != regexPayload {
-				channel <- fmt.Errorf("Payload is not Matched")
+				channel <- fmt.Errorf("payload is not matched")
 			}
 			i++
 		}
@@ -347,7 +347,7 @@ func CheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, payload
 	}
 
 	if pe.EventName != event {
-		return errors.New("event 比對不一致")
+		return errors.New("event is not matched")
 	}
 	return nil
 }
@@ -356,7 +356,7 @@ func PublishEventCommandFailed() error {
 	if ut.CmdResult.Err != nil {
 		return nil
 	}
-	return fmt.Errorf("publish應該要失敗")
+	return fmt.Errorf("publish should be failed")
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
@@ -365,17 +365,16 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		ut.ClearDataProducts()
 		return ctx, nil
 	})
-	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^創建 data product "'(.*?)'" 使用參數 "'(.*?)'"$`, ut.CreateDataProduct)
-	ctx.Given(`^"'(.*?)'" 創建 ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
-	ctx.When(`^publish Event "'(.*?)'" 使用參數 "'(.*?)'"$`, PublishEventCommand)
-	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡有 "'(.*?)'" 帶有 "'(.*?)'"$`, CheckDPStreamDPExist)
-	ctx.Then(`^使用 nats jetstream 查詢 GVT_default "'(.*?)'" 帶有 "'(.*?)'"$`, QueryJetstreamEventExist)
-	ctx.When(`^更新 data product "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateDataProductCommand)
-	ctx.When(`^更新 data product "'([^'"]*?)'" 的 ruleset "'([^'"]*?)'" 使用參數 enabled=true$`, UpdateRulesetCommand)
-	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡沒有 "'(.*?)'"$`, CheckDPStreamDPNotExist)
-	ctx.Then(`^查詢 GVT_default_DP_"'(.*?)'" 裡是否有兩筆 "'(.*?)'" 帶有 "'(.*?)'" 與 "'(.*?)'"$`, CheckDPStreamDPEventHasTwoPayload)
-	ctx.Then(`^Cli 回傳建立失敗$`, PublishEventCommandFailed)
-	ctx.Then(`^Restart Docker$`, ut.RestartDocker)
+	ctx.Given(`^Nats has been opened$`, ut.CheckNatsService)
+	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
+	ctx.Given(`^Create data product with "'(.*?)'" using parameters "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.Given(`^"'(.*?)'" create ruleset "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
+	ctx.When(`^Publish Event "'(.*?)'" using parameters "'(.*?)'"$`, PublishEventCommand)
+	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has "'(.*?)'" with "'(.*?)'"$`, CheckDPStreamDPExist)
+	ctx.Then(`^Using NATS Jetstream to query GVT_default "'(.*?)'" has "'(.*?)'"$`, QueryJetstreamEventExist)
+	ctx.When(`^Update data product "'([^'"]*?)'" using parameters enabled=true$`, UpdateDataProductCommand)
+	ctx.When(`^Update data product "'([^'"]*?)'" ruleset "'([^'"]*?)'" using parameters enabled=true$`, UpdateRulesetCommand)
+	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has no "'(.*?)'"$`, CheckDPStreamDPNotExist)
+	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has "'(.*?)'" with "'(.*?)'" and "'(.*?)'"$`, CheckDPStreamDPEventHasTwoPayload)
+	ctx.Then(`^Cli returns create failed$`, PublishEventCommandFailed)
 }

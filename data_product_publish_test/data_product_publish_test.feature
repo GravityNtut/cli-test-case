@@ -1,17 +1,17 @@
 Feature: Data Product publish
 
 Scenario:
-    Given 已開啟服務 nats
-    Given 已開啟服務 dispatcher
+    Given Nats has been opened
+    Given Dispatcher has been opened
 
 # Scenario
-    Scenario: 針對data product 的 event publish，成功情境
-    Given 創建 data product "'drink'" 使用參數 "'<DPEnabled>'"
-    Given "'drink'" 創建 ruleset "'drinkEvent'" 使用參數 "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
-    When publish Event "'<Event>'" 使用參數 "'<Payload>'"
-    When 更新 data product "'drink'" 使用參數 enabled=true
-    When 更新 data product "'drink'" 的 ruleset "'drinkEvent'" 使用參數 enabled=true
-    Then 查詢 GVT_default_DP_"'drink'" 裡有 "'<Event>'" 帶有 "'<Payload>'"
+    Scenario: Publish for data product of the event (Success scenario)
+    Given Create data product with "'drink'" using parameters "'<DPEnabled>'"
+    Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
+    When Publish Event "'<Event>'" using parameters "'<Payload>'"
+    When Update data product "'drink'" using parameters enabled=true
+    When Update data product "'drink'" ruleset "'drinkEvent'" using parameters enabled=true
+    Then Query GVT_default_DP_"'drink'" has "'<Event>'" with "'<Payload>'"
     Examples:
         |   ID   | Event      |                    Payload                             | RSMethod |       RSHandler         |       RSSchema                    | RSPk     | RSEnabled | DPEnabled |
         |  M(1)  | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js     | ./assets/schema.json              | id       | [true]    | [true]    |
@@ -50,23 +50,23 @@ Scenario:
         |  M(34) | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js     | ./assets/schema.json              | id,      | [true]    | [true]    |
         |  M(35) | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js     | ./assets/schema.json              | id       | [false]   | [false]   |
 
-    Scenario: 與成功情境大致相同，但publish完畢後先更新ruleset為enabled，後更新data product為enabled
-    Given 創建 data product "'drink'" 使用參數 "'<DPEnabled>'"
-    Given "'drink'" 創建 ruleset "'drinkEvent'" 使用參數 "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
-    When publish Event "'<Event>'" 使用參數 "'<Payload>'"
-    When 更新 data product "'drink'" 使用參數 enabled=true
-    When 更新 data product "'drink'" 的 ruleset "'drinkEvent'" 使用參數 enabled=true
-    Then 查詢 GVT_default_DP_"'drink'" 裡有 "'<Event>'" 帶有 "'<Payload>'"
+    Scenario: Similar to the successful scenario, but after publishing, update the ruleset to enabled first, then update the data product to enabled.
+    Given Create data product with "'drink'" using parameters "'<DPEnabled>'"
+    Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
+    When Publish Event "'<Event>'" using parameters "'<Payload>'"
+    When Update data product "'drink'" using parameters enabled=true
+    When Update data product "'drink'" ruleset "'drinkEvent'" using parameters enabled=true
+    Then Query GVT_default_DP_"'drink'" has "'<Event>'" with "'<Payload>'"
     Examples:
         |   ID   | Event      |                    Payload                     | RSMethod |       RSHandler     |       RSSchema       | RSPk | RSEnabled | DPEnabled |
         |  E1(1) | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js | ./assets/schema.json | id   | [false]   | [false]   |
     
-    Scenario: 針對data product 的 event publish(publish指令失敗情境)
-    Given 創建 data product "'drink'" 使用參數 "'<DPEnabled>'"
-    Given "'drink'" 創建 ruleset "'drinkEvent'" 使用參數 "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
-    When publish Event "'<Event>'" 使用參數 "'<Payload>'"
-    Then Cli 回傳建立失敗
-    # And 應有錯誤訊息 "'<Error_message>'"
+    Scenario: publish for data product of the event (failure scenario for the publish command).
+    Given Create data product with "'drink'" using parameters "'<DPEnabled>'"
+    Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
+    When Publish Event "'<Event>'" using parameters "'<Payload>'"
+    Then Cli returns create failed
+    # And The error message should be "'<Error_message>'"
     Examples:
         |   ID   | Event      |                    Payload                     | RSMethod |       RSHandler     |       RSSchema       | RSPk | RSEnabled | DPEnabled |
         |  E2(1) | ""         | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js | ./assets/schema.json | id   | [true]    | [true]    |
@@ -74,12 +74,12 @@ Scenario:
         |  E2(3) | drinkEvent | ' '                                            | create   | ./assets/handler.js | ./assets/schema.json | id   | [true]    | [true]    |
         |  E2(4) | drinkEvent | 'abc'                                          | create   | ./assets/handler.js | ./assets/schema.json | id   | [true]    | [true]    |
 
-    Scenario: 指令執行成功但沒publish到指定的DP
-    Given 創建 data product "'drink'" 使用參數 "'<DPEnabled>'"
-    Given "'drink'" 創建 ruleset "'drinkEvent'" 使用參數 "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
-    When publish Event "'<Event>'" 使用參數 "'<Payload>'"
-    Then 查詢 GVT_default_DP_"'drink'" 裡沒有 "'<Event>'"
-    Then 使用 nats jetstream 查詢 GVT_default "'<Event>'" 帶有 "'<Payload>'"
+    Scenario: The command executes successfully but does not publish to the specified DP.
+    Given Create data product with "'drink'" using parameters "'<DPEnabled>'"
+    Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
+    When Publish Event "'<Event>'" using parameters "'<Payload>'"
+    Then Query GVT_default_DP_"'drink'" has no "'<Event>'"
+    Then Using NATS Jetstream to query GVT_default "'<Event>'" has "'<Payload>'"
     Examples:
         |    ID   |    Event     |                    Payload                     | RSMethod |         RSHandler                                  |               RSSchema              |    RSPk    | RSEnabled |    DPEnabled    |
         |  E3(1)  | drinkEvent   |               '{"name":"test"}'                |  create  |      ./assets/handler.js                           |          ./assets/schema.json       |    id      |  [true]   |      [true]     |
@@ -91,7 +91,8 @@ Scenario:
         |  E3(7)  | drinkEvent   |             '{"not_exist":"Hi"}'               |  create  |      ./assets/handler.js                           |          ./assets/schema.json       |    id,uid  |  [true]   |      [true]     |
         |  E3(8)  | drinkEvent   |                     '{}'                       |  create  |      ./assets/handler.js                           |          ./assets/schema.json       |    id,uid  |  [true]   |      [true]     |
         |  E3(9)  | NotExist     | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' |  create  |      ./assets/handler.js                           |          ./assets/schema.json       |    id      |  [true]   |      [true]     |
-        #|  E3(10) | drinkEvent   | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' |  create  |      ./assets/empty.js                             |          ./assets/schema.json       |    id      |  [true]   |      [true]     |
+        # |  E3(10) | drinkEvent   | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' |  create  |      ./assets/empty.js                             |          ./assets/schema.json       |    id      |  [true]   |      [true]     |
+        # E3(10) will cause dispatcher crash
         |  E3(11) | drinkEvent   | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' |  create  |      ./assets/fail_handler.js                      |          ./assets/schema.json       |    id      |  [true]   |      [true]     |
         |  E3(12) | drinkEvent   | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' |  create  |      ./assets/WrongFileExtension.txt               |          ./assets/schema.json       |    id      |  [true]   |      [true]     |
         |  E3(13) | drinkEvent   | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' |  create  |      ./assets/WrongFileExtensionAndFormat.jpg      |          ./assets/schema.json       |    id      |  [true]   |      [true]     |
@@ -103,24 +104,24 @@ Scenario:
         |  E3(19) | drinkEvent   | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js     | ./assets/schemaWithNoPK.json      | id       | [true]    | [true]    |
         |  E3(20) | drinkEvent   | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js     | ./assets/schemaWithEmptyJson.json | id       | [true]    | [true]    |
 
-    Scenario: 針對data product 的 event publish (同個event pub到多個data product中)
-    Given 創建 data product "'drink'" 使用參數 "'<DPEnabled>'"
-    Given 創建 data product "'drink2'" 使用參數 "'<DPEnabled>'"
-    Given "'drink'" 創建 ruleset "'drinkEvent'" 使用參數 "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
-    Given "'drink2'" 創建 ruleset "'drinkEvent'" 使用參數 "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
-    When publish Event "'<Event>'" 使用參數 "'<Payload>'"
-    Then 查詢 GVT_default_DP_"'drink'" 裡有 "'<Event>'" 帶有 "'<Payload>'"
-    Then 查詢 GVT_default_DP_"'drink2'" 裡有 "'<Event>'" 帶有 "'<Payload>'"
+    Scenario: publish for data product of the event (The same event is published to multiple data products)
+    Given Create data product with "'drink'" using parameters "'<DPEnabled>'"
+    Given Create data product with "'drink2'" using parameters "'<DPEnabled>'"
+    Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
+    Given "'drink2'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
+    When Publish Event "'<Event>'" using parameters "'<Payload>'"
+    Then Query GVT_default_DP_"'drink'" has "'<Event>'" with "'<Payload>'"
+    Then Query GVT_default_DP_"'drink2'" has "'<Event>'" with "'<Payload>'"
     Examples:
         |    ID   |    Event   |                    Payload                     | RSMethod |         RSHandler           |               RSSchema            |    RSPk    | RSEnabled |    DPEnabled    |
         |  E4(1)  | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' |  create  |      assets/handler.js      |          assets/schema.json       |    id      |  [true]   |      [true]     |
 
-    Scenario: 針對data product 的 event publish (連續publish兩筆帶有相同PK值，但其他欄位數量與內容皆不相同的event)
-    Given 創建 data product "'drink'" 使用參數 "'<DPEnabled>'"
-    Given "'drink'" 創建 ruleset "'drinkEvent'" 使用參數 "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
-    When publish Event "'<Event>'" 使用參數 "'<Payload>'"
-    When publish Event "'<Event>'" 使用參數 "'<Payload2>'"
-    Then 查詢 GVT_default_DP_"'drink'" 裡是否有兩筆 "'<Event>'" 帶有 "'<Payload>'" 與 "'<Payload2>'"
+    Scenario: publish for data product of the event (Continuously publish two events with the same PK value, but the number and content of other fields are different.)
+    Given Create data product with "'drink'" using parameters "'<DPEnabled>'"
+    Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
+    When Publish Event "'<Event>'" using parameters "'<Payload>'"
+    When Publish Event "'<Event>'" using parameters "'<Payload2>'"
+    Then Query GVT_default_DP_"'drink'" has "'<Event>'" with "'<Payload>'" and "'<Payload2>'"
     Examples:
         |    ID   |    Event   |                    Payload                             |         Payload2                 | RSMethod |         RSHandler           |               RSSchema            |    RSPk    | RSEnabled |    DPEnabled    |
         |  E5(1)  | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | '{"id":1,"uid":222,"name":"replace"}' |  create  |      assets/handler.js      |          assets/schema.json       |    id      |  [true]   |      [true]     |
