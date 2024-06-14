@@ -356,11 +356,6 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
 		ut.ClearDataProducts()
-		if lastScenarioName != "" && lastScenarioName != sc.Name {
-			// The scenario has changed, so we restart Docker.
-			ut.RestartDocker()
-		}
-		lastScenarioName = sc.Name
 		return ctx, nil
 	})
 	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
