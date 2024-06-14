@@ -1,25 +1,25 @@
 Feature: Data Product delete
 
 Scenario:
-    Given 已開啟服務 nats
-    Given 已開啟服務 dispatcher
+    Given Nats has been opened
+    Given Dispatcher has been opened
 
 #Scenario: 
-Scenario: 針對已存在的Data Product進行刪除 成功情境
-    Given 已有 data product "'drink'" enabled "'[true]'"
-    When 刪除 data product "'<ProductName>'"
-    Then Cli 回傳 "'<ProductName>'" 刪除成功
-    Then 使用 gravity-cli 查詢 "'<ProductName>'" 不存在
-    Then 使用 nats jetstream 查詢 "'<ProductName>'" 不存在
+Scenario: Success scenario for the deletion of an existing Data Product
+    Given  Create data product with "'<ProductName>'" using parameters "'[true]'"
+    When Delete data product "'<ProductName>'"
+    Then The CLI returned the message: Product "'<ProductName>'" was deleted.
+    Then Using gravity-cli to query "'<ProductName>'" shows it does not exist.
+    Then Using NATS Jetstream to query "'<ProductName>'" shows it does not exist.
 Examples:
     |  ID  | ProductName |
     | M(1) | drink       |
 
 #Scenario: 
-Scenario: 針對不存在的Data Product進行刪除 失敗情境
-    When 刪除 data product "'<ProductName>'"
-    Then Cli 回傳刪除失敗
-	# And 應有錯誤訊息 "'<Error_message>'"
+Scenario: Fail scenario for the deletion of a non-existent Data Product.
+    When Delete data product "'<ProductName>'"
+    Then CLI returns exit code 1
+	# And The error message should be "'<Error_message>'"
 Examples:
     |  ID   | ProductName | Error_message |
     | E1(1) | failProduct |               |

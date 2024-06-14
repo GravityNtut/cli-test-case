@@ -39,7 +39,7 @@ func SearchDataProductByCLIFail(dataProduct string) error {
 	if err != nil {
 		return nil
 	}
-	return errors.New("Cli 預期不存在，但查詢到了")
+	return errors.New("the CLI was expected to not exist, but it was found")
 }
 
 func SearchDataProductByJetstreamFail(dataProduct string) error {
@@ -55,7 +55,7 @@ func SearchDataProductByJetstreamFail(dataProduct string) error {
 
 	for stream := range streams {
 		if stream == "GVT_default_DP_"+dataProduct {
-			return errors.New("Jetstream 預期不存在，但查詢到了")
+			return errors.New("jetstream was expected to not exist, but it was found")
 		}
 	}
 	return nil
@@ -79,14 +79,14 @@ func DeleteDataProductSuccess(productName string) error {
 	if outStr == "Product \""+productName+"\" was deleted\n" {
 		return nil
 	}
-	return errors.New("Cli回傳訊息錯誤")
+	return errors.New("the message returned by the CLI is incorrect")
 }
 
 func DeleteDataProductFail() error {
 	if ut.CmdResult.Err != nil {
 		return nil
 	}
-	return errors.New("data product 刪除應該要失敗")
+	return errors.New("the data product deletion should fail")
 }
 
 // TODO
@@ -95,7 +95,7 @@ func DeleteDataProductFail() error {
 // 	if outErr == errorMessage {
 // 		return nil
 // 	}
-// 	return errors.New("Cli回傳訊息錯誤")
+// 	return errors.New("CLI returns error message")
 // }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
@@ -105,13 +105,13 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有 data product "'(.*?)'" enabled "'(.*?)'"$`, ut.CreateDataProduct)
-	ctx.When(`^刪除 data product "'(.*?)'"$`, DeleteDataProductCommand)
-	ctx.Then(`^Cli 回傳 "'(.*?)'" 刪除成功$`, DeleteDataProductSuccess)
-	ctx.Then(`^Cli 回傳刪除失敗$`, DeleteDataProductFail)
-	ctx.Then(`^使用 gravity-cli 查詢 "'(.*?)'" 不存在$`, SearchDataProductByCLIFail)
-	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 不存在$`, SearchDataProductByJetstreamFail)
-	// ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
+	ctx.Given(`^Nats has been opened$`, ut.CheckNatsService)
+	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
+	ctx.Given(`^Create data product with "'(.*?)'" using parameters "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.When(`^Delete data product "'(.*?)'"$`, DeleteDataProductCommand)
+	ctx.Then(`^The CLI returned the message: Product "'(.*?)'" was deleted.$`, DeleteDataProductSuccess)
+	ctx.Then(`^CLI returns exit code 1$`, DeleteDataProductFail)
+	ctx.Then(`^Using gravity-cli to query "'(.*?)'" shows it does not exist.$`, SearchDataProductByCLIFail)
+	ctx.Then(`^Using NATS Jetstream to query "'(.*?)'" shows it does not exist.$`, SearchDataProductByJetstreamFail)
+	// ctx.Then(`^The error message should be "'(.*?)'"$`, AssertErrorMessages)
 }
