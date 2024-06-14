@@ -22,7 +22,6 @@ import (
 )
 
 var ut = testutils.TestUtils{}
-var lastScenarioName string
 
 func TestFeatures(t *testing.T) {
 	err := ut.LoadConfig()
@@ -56,7 +55,7 @@ func CreateDataProductRuleset(dataProduct string, ruleset string, RSMethod strin
 	if RSHandler == testutils.IgnoreString {
 		RSHandler = ""
 	} else {
-		RSHandler = "--handler=" + RSHandler;
+		RSHandler = "--handler=" + RSHandler
 	}
 
 	cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--event", ruleset, "--method", RSMethod, "--pk", RSPk, RSHandler, "--schema", RSSchema, "--enabled="+RSEnabled, "-s", ut.Config.JetstreamURL)
@@ -105,15 +104,15 @@ func QueryJetstreamEventExist(event string, payload string) error {
 	if _, err := js.ChanSubscribe("$GVT.default.EVENT.*", ch); err != nil {
 		return fmt.Errorf("js get subscribe failed: %v", err)
 	}
-	
+
 	var m *nats.Msg
 	select {
 	case m = <-ch:
-		
+
 	case <-time.After(10 * time.Second):
-		return errors.New("subscribe out of time!!")
+		return errors.New("subscribe out of time")
 	}
-	
+
 	var jsonData JSONData
 	if err := json.Unmarshal(m.Data, &jsonData); err != nil {
 		return fmt.Errorf("json unmarshal failed: %v", err)
@@ -146,12 +145,12 @@ func CheckDPStreamDPNotExist(dataProduct string) error {
 	if err != nil {
 		return fmt.Errorf("subscribe failed %s", err.Error())
 	}
-	
+
 	select {
 	case <-ch:
 		return fmt.Errorf("預期不會進到GVT_default_DP裡，但是進了")
 	case <-time.After(5 * time.Second):
-		
+
 	}
 	if err := sub.Unsubscribe(); err != nil {
 		return fmt.Errorf("unsubscribe failed %s", err.Error())
@@ -218,11 +217,11 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 
 	select {
 	case msg = <-ch:
-		
+
 	case <-time.After(10 * time.Second):
-		return errors.New("subscribe out of time!!")
+		return errors.New("subscribe out of time")
 	}
-	
+
 	err = proto.Unmarshal(msg.Data, &pe)
 	if err != nil {
 		return fmt.Errorf("Failed to parsing product event: %v", err)
@@ -298,15 +297,23 @@ func CheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, payload
 	}
 	var pe gravity_sdk_types_product_event.ProductEvent
 
-	var payloadList []string = []string{payload, payload2}
+	var payloadList = []string{payload, payload2}
 
 	channel := make(chan error)
 
 	ch := make(chan *nats.Msg, 2)
-	js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
+	sub, err := js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
+	if err != nil {
+		return fmt.Errorf("js get subscribe failed: %v", err)
+	}
+	time.Sleep(1 * time.Second)
+	if err := sub.Unsubscribe(); err != nil {
+		return fmt.Errorf("unsubscribe failed %s", err.Error())
+	}
+
 	go func() {
 		i := 0
-        for msg := range ch {
+		for msg := range ch {
 			err = proto.Unmarshal(msg.Data, &pe)
 			if err != nil {
 				channel <- fmt.Errorf("Failed to parsing product event: %v", err)
@@ -324,16 +331,16 @@ func CheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, payload
 			regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payloadList[i])[1]
 			regexPayload = ut.FormatJSONData(regexPayload)
 			if recieveJSONStringResult != regexPayload {
-				channel <- fmt.Errorf("Payload is not Matched!!")
+				channel <- fmt.Errorf("Payload is not Matched")
 			}
 			i++
-        }
+		}
 		channel <- nil
-    }()
+	}()
 
-    time.Sleep(10 * time.Second)
+	time.Sleep(10 * time.Second)
 
-    close(ch)
+	close(ch)
 
 	if err := <-channel; err != nil {
 		return err
@@ -354,7 +361,7 @@ func PublishEventCommandFailed() error {
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
-	ctx.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
+	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
 		ut.ClearDataProducts()
 		return ctx, nil
 	})
