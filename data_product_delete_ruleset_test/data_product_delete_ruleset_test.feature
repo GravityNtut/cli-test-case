@@ -1,26 +1,26 @@
 Feature: Data Product ruleset delete
 
 Scenario:
-    Given 已開啟服務 nats
-    Given 已開啟服務 dispatcher
+    Given Nats has been opened
+    Given Dispatcher has been opened
 
 #Scenario
-    Scenario: 針對刪除data product ruleset成功情境
-    Given 已有 date product "'drink'" enabled "'[true]'"
-    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'" enabled "'[true]'"
-    When 刪除 "'<ProductName>'" 的 ruleset "'<RulesetName>'"
-    Then Cli 回傳刪除成功
-    Then 使用 gravity-cli 查詢 "'<ProductName>'" 的 "'<RulesetName>'" 不存在
+    Scenario: Success scenario for the deletion of a data product ruleset
+    Given Create data product with "'<ProductName>'" using parameters "'[true]'"
+    Given Create data product ruleset with "'<ProductName>'", "'<RulesetName>'" using parameters "'[true]'"
+    When Delete ruleset "'<RulesetName>'" for data product "'<ProductName>'"
+    Then CLI returned successfully deleted
+    Then Using gravity-cli to query that "'<RulesetName>'" does not exist for "'<ProductName>'"
     Examples:
         | ID  | ProductName | RulesetName     |
         | M(1)| drink       | drinkCreated    |
 
 #Scenario
-    Scenario: 針對刪除data product ruleset失敗情境
-    Given 已有 date product "'drink'" enabled "'[true]'"
-    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'" enabled "'[true]'"
-    When 刪除 "'<ProductName>'" 的 ruleset "'<RulesetName>'"
-    Then Cli 回傳刪除失敗
+    Scenario: Fail scenario for the deletion of a non-existent Data Product ruleset.
+    Given Create data product with "'drink'" using parameters "'[true]'"
+    Given Create data product ruleset with "'drink'", "'drinkCreated'" using parameters "'[true]'"
+    When Delete ruleset "'<RulesetName>'" for data product "'<ProductName>'"
+    Then CLI returns exit code 1
 	# And 應有錯誤訊息 "'<Error_message>'"
     Examples:
         |  ID  | ProductName  | RulesetName  | Error_message |
