@@ -212,7 +212,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^Create data product "'(.*?)'" and enabled is "'(.*?)'"$`, ut.CreateDataProduct)
 	ctx.When(`^"'(.*?)'" add ruleset "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, AddRulesetCommand)
 	ctx.Then(`^CLI returns exit code 1$`, AddRulesetCommandFailed)
-	ctx.Then(`^Add ruleset success$`, AddRulesetCommandSuccess)
+	ctx.Then(`^Check adding ruleset success$`, AddRulesetCommandSuccess)
 	ctx.Then(`^Use gravity-cli to query the "'(.*?)'" 's "'(.*?)'" exists$`, SearchRulesetByCLISuccess)
 	ctx.Then(`^Use NATS jetstream to query the "'(.*?)'" 's "'(.*?)'" exists and parameters "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" are correct$`, SearchRulesetByNatsSuccess)
 	// ctx.Then(`^The error message should be "'(.*?)'"$`, AssertErrorMessages)
