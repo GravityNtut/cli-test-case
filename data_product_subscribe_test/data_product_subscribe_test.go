@@ -249,7 +249,7 @@ func ValidateSubResult(partitionString string, seqString string) error {
 
 func SubCommandFail() error {
 	if ut.CmdResult.Err == nil || ut.CmdResult.Err.(*exec.ExitError).ExitCode() == 124 {
-		return errors.New("This command should be failed.")
+		return errors.New("this command should be failed")
 	}
 	return nil
 }
