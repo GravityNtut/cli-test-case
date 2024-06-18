@@ -1,17 +1,17 @@
 Feature: Data Product publish
 
 Scenario:
-    Given Nats has been opened
+    Given NATS has been opened
     Given Dispatcher has been opened
 
 # Scenario
-    Scenario: Publish for data product of the event (Success scenario)
+    Scenario Outline: Publish for data product of the event (Success scenario)
     Given Create data product with "'drink'" using parameters "'<DPEnabled>'"
     Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
     When Publish Event "'<Event>'" using parameters "'<Payload>'"
     When Update data product "'drink'" using parameters enabled=true
     When Update data product "'drink'" ruleset "'drinkEvent'" using parameters enabled=true
-    Then Query GVT_default_DP_"'drink'" has "'<Event>'" with "'<Payload>'"
+    Then Query GVT_default_DP_"'drink'" has a event with payload "'<Payload>'" and type is "'<Event>'"
     Examples:
         |   ID   | Event      |                    Payload                             | RSMethod |       RSHandler         |       RSSchema                    | RSPk     | RSEnabled | DPEnabled |
         |  M(1)  | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js     | ./assets/schema.json              | id       | [true]    | [true]    |
@@ -50,22 +50,22 @@ Scenario:
         |  M(34) | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js     | ./assets/schema.json              | id,      | [true]    | [true]    |
         |  M(35) | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js     | ./assets/schema.json              | id       | [false]   | [false]   |
 
-    Scenario: Similar to the successful scenario, but after publishing, update the ruleset to enabled first, then update the data product to enabled.
+    Scenario Outline: Similar to the successful scenario, but after publishing, update the ruleset to enabled first, then update the data product to enabled.
     Given Create data product with "'drink'" using parameters "'<DPEnabled>'"
     Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
     When Publish Event "'<Event>'" using parameters "'<Payload>'"
     When Update data product "'drink'" using parameters enabled=true
     When Update data product "'drink'" ruleset "'drinkEvent'" using parameters enabled=true
-    Then Query GVT_default_DP_"'drink'" has "'<Event>'" with "'<Payload>'"
+    Then Query GVT_default_DP_"'drink'" has a event with payload "'<Payload>'" and type is "'<Event>'"
     Examples:
         |   ID   | Event      |                    Payload                     | RSMethod |       RSHandler     |       RSSchema       | RSPk | RSEnabled | DPEnabled |
         |  E1(1) | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js | ./assets/schema.json | id   | [false]   | [false]   |
     
-    Scenario: publish for data product of the event (failure scenario for the publish command).
+    Scenario Outline: publish for data product of the event (failure scenario for the publish command).
     Given Create data product with "'drink'" using parameters "'<DPEnabled>'"
     Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
     When Publish Event "'<Event>'" using parameters "'<Payload>'"
-    Then Cli returns create failed
+    Then CLI returns create failed
     # And The error message should be "'<Error_message>'"
     Examples:
         |   ID   | Event      |                    Payload                     | RSMethod |       RSHandler     |       RSSchema       | RSPk | RSEnabled | DPEnabled |
@@ -74,12 +74,12 @@ Scenario:
         |  E2(3) | drinkEvent | ' '                                            | create   | ./assets/handler.js | ./assets/schema.json | id   | [true]    | [true]    |
         |  E2(4) | drinkEvent | 'abc'                                          | create   | ./assets/handler.js | ./assets/schema.json | id   | [true]    | [true]    |
 
-    Scenario: The command executes successfully but does not publish to the specified DP.
+    Scenario Outline: The command executes successfully but does not publish to the specified DP.
     Given Create data product with "'drink'" using parameters "'<DPEnabled>'"
     Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
     When Publish Event "'<Event>'" using parameters "'<Payload>'"
     Then Query GVT_default_DP_"'drink'" has no "'<Event>'"
-    Then Using NATS Jetstream to query GVT_default "'<Event>'" has "'<Payload>'"
+    Then Using NATS Jetstream to query GVT_default has a event with payload "'<Payload>'" and type is "'<Event>'"
     Examples:
         |    ID   |    Event     |                    Payload                     | RSMethod |         RSHandler                                  |               RSSchema              |    RSPk    | RSEnabled |    DPEnabled    |
         |  E3(1)  | drinkEvent   |               '{"name":"test"}'                |  create  |      ./assets/handler.js                           |          ./assets/schema.json       |    id      |  [true]   |      [true]     |
@@ -104,24 +104,24 @@ Scenario:
         |  E3(19) | drinkEvent   | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js     | ./assets/schemaWithNoPK.json      | id       | [true]    | [true]    |
         |  E3(20) | drinkEvent   | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js     | ./assets/schemaWithEmptyJson.json | id       | [true]    | [true]    |
 
-    Scenario: publish for data product of the event (The same event is published to multiple data products)
+    Scenario Outline: publish for data product of the event (The same event is published to multiple data products)
     Given Create data product with "'drink'" using parameters "'<DPEnabled>'"
     Given Create data product with "'drink2'" using parameters "'<DPEnabled>'"
     Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
     Given "'drink2'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
     When Publish Event "'<Event>'" using parameters "'<Payload>'"
-    Then Query GVT_default_DP_"'drink'" has "'<Event>'" with "'<Payload>'"
-    Then Query GVT_default_DP_"'drink2'" has "'<Event>'" with "'<Payload>'"
+    Then Query GVT_default_DP_"'drink'" has a event with payload "'<Payload>'" and type is "'<Event>'"
+    Then Query GVT_default_DP_"'drink2'" has a event with payload "'<Payload>'" and type is "'<Event>'"
     Examples:
         |    ID   |    Event   |                    Payload                     | RSMethod |         RSHandler           |               RSSchema            |    RSPk    | RSEnabled |    DPEnabled    |
         |  E4(1)  | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' |  create  |      assets/handler.js      |          assets/schema.json       |    id      |  [true]   |      [true]     |
 
-    Scenario: publish for data product of the event (Continuously publish two events with the same PK value, but the number and content of other fields are different.)
+    Scenario Outline: publish for data product of the event (Continuously publish two events with the same PK value, but the number and content of other fields are different.)
     Given Create data product with "'drink'" using parameters "'<DPEnabled>'"
     Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
     When Publish Event "'<Event>'" using parameters "'<Payload>'"
     When Publish Event "'<Event>'" using parameters "'<Payload2>'"
-    Then Query GVT_default_DP_"'drink'" has "'<Event>'" with "'<Payload>'" and "'<Payload2>'"
+    Then Query GVT_default_DP_"'drink'" has two events with payload "'<Payload>'" and "'<Payload2>'" and type is "'<Event>'"
     Examples:
         |    ID   |    Event   |                    Payload                             |         Payload2                 | RSMethod |         RSHandler           |               RSSchema            |    RSPk    | RSEnabled |    DPEnabled    |
         |  E5(1)  | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | '{"id":1,"uid":222,"name":"replace"}' |  create  |      assets/handler.js      |          assets/schema.json       |    id      |  [true]   |      [true]     |

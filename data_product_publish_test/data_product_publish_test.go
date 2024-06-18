@@ -1,7 +1,6 @@
 package dataproductpublish
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -49,7 +48,7 @@ func CreateDataProductRuleset(dataProduct string, ruleset string, RSMethod strin
 	} else if RSEnabled == testutils.FalseString {
 		RSEnabled = "false"
 	} else {
-		return errors.New("Enable must be [true] or [false]")
+		return errors.New("enable must be [true] or [false]")
 	}
 
 	if RSHandler == testutils.IgnoreString {
@@ -66,17 +65,7 @@ func CreateDataProductRuleset(dataProduct string, ruleset string, RSMethod strin
 	return nil
 }
 
-func GeneratePayloadWithLargeNum(number int) string {
-	var payload string
-	for i := 0; i < number; i++ {
-		payload += "a"
-	}
-	result := fmt.Sprintf(`{"id":1, "name":"%s", "kcal":1000, "price":100}`, payload)
-	return result
-}
-
 func PublishEventCommand(event string, payload string) error {
-	payload = ut.ProcessString(payload)
 	pubString := "../gravity-cli pub " + event + " " + payload
 	if err := ut.ExecuteShell(pubString); err != nil {
 		return err
@@ -89,10 +78,8 @@ type JSONData struct {
 	Payload string `json:"payload"`
 }
 
-func QueryJetstreamEventExist(event string, payload string) error {
-	// 移除最外邊的單引號
+func QueryJetstreamEventExist(payload string, event string) error {
 	payload = regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payload)[1]
-	payload = ut.ProcessString(payload)
 	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
@@ -102,7 +89,7 @@ func QueryJetstreamEventExist(event string, payload string) error {
 	}
 	ch := make(chan *nats.Msg, 1)
 	if _, err := js.ChanSubscribe("$GVT.default.EVENT.*", ch); err != nil {
-		return fmt.Errorf("js get subscribe failed: %v", err)
+		return fmt.Errorf("jetstream subscribe failed: %v", err)
 	}
 
 	var m *nats.Msg
@@ -117,9 +104,11 @@ func QueryJetstreamEventExist(event string, payload string) error {
 	if err := json.Unmarshal(m.Data, &jsonData); err != nil {
 		return fmt.Errorf("json unmarshal failed: %v", err)
 	}
-	//fmt.Println("Event: ", jsonData.Event)
-	result, _ := Base64ToString(jsonData.Payload)
-	//fmt.Println("Payload: ", result)
+
+	result, err := Base64ToString(jsonData.Payload)
+	if err != nil {
+		return fmt.Errorf("base64 decode failed: %v", err)
+	}
 
 	if jsonData.Event != event {
 		return fmt.Errorf("expected event: %s, actual event: %s", event, jsonData.Event)
@@ -132,7 +121,10 @@ func QueryJetstreamEventExist(event string, payload string) error {
 
 func CheckDPStreamDPNotExist(dataProduct string) error {
 	const EventCount = 1
-	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
+	nc, err := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
+	if err != nil {
+		return fmt.Errorf("nats connect failed %s", err.Error())
+	}
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -141,8 +133,7 @@ func CheckDPStreamDPNotExist(dataProduct string) error {
 	}
 
 	ch := make(chan *nats.Msg, EventCount)
-	sub, err := js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
-	if err != nil {
+	if _, err := js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch); err != nil {
 		return fmt.Errorf("subscribe failed %s", err.Error())
 	}
 
@@ -152,9 +143,7 @@ func CheckDPStreamDPNotExist(dataProduct string) error {
 	case <-time.After(5 * time.Second):
 
 	}
-	if err := sub.Unsubscribe(); err != nil {
-		return fmt.Errorf("unsubscribe failed %s", err.Error())
-	}
+
 	return nil
 }
 
@@ -168,11 +157,7 @@ func Base64ToString(base64Str string) (string, error) {
 
 func UpdateDataProductCommand(dataProduct string) error {
 	cmd := exec.Command(testutils.GravityCliString, "product", "update", dataProduct, "--enabled=true", "-s", ut.Config.JetstreamURL)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
 	err := cmd.Run()
-	//fmt.Println(stderr.String())
 	if err != nil {
 		return errors.New("data product update failed")
 	}
@@ -181,18 +166,14 @@ func UpdateDataProductCommand(dataProduct string) error {
 
 func UpdateRulesetCommand(dataProduct string, ruleset string) error {
 	cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "update", dataProduct, ruleset, "--enabled=true", "-s", ut.Config.JetstreamURL)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
 	err := cmd.Run()
-	//fmt.Println(stderr.String())
 	if err != nil {
 		return errors.New("ruleset update failed")
 	}
 	return nil
 }
 
-func CheckDPStreamDPExist(dataProduct string, event string, payload string) error {
+func CheckDPStreamDPExist(dataProduct string, payload string, event string) error {
 	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
@@ -203,14 +184,9 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 	var pe gravity_sdk_types_product_event.ProductEvent
 
 	ch := make(chan *nats.Msg, 1)
-	sub, err := js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
 
-	if err != nil {
+	if _, err := js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch); err != nil {
 		return fmt.Errorf("subscribe failed %s", err.Error())
-	}
-	time.Sleep(1 * time.Second)
-	if err := sub.Unsubscribe(); err != nil {
-		return fmt.Errorf("unsubscribe failed %s", err.Error())
 	}
 
 	var msg *nats.Msg
@@ -266,10 +242,6 @@ func CheckDPStreamDPExist(dataProduct string, event string, payload string) erro
 	}
 
 	filteredJSONStringResult := strings.Join(strings.Fields(string(filteredJSON)), "")
-
-	// fmt.Println("recieveJSONStringResult:", recieveJSONStringResult)
-	// fmt.Println("filteredJSONStringResult: ",filteredJSONStringResult)
-
 	if filteredJSONStringResult != recieveJSONStringResult {
 		return errors.New("payload is not matched")
 	}
@@ -287,7 +259,7 @@ func filterMapByKeys(source, keys map[string]interface{}) map[string]interface{}
 	return filtered
 }
 
-func CheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, payload string, payload2 string) error {
+func CheckDPStreamDPEventHasTwoPayload(dataProduct string, payload string, payload2 string, event string) error {
 	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
@@ -299,52 +271,46 @@ func CheckDPStreamDPEventHasTwoPayload(dataProduct string, event string, payload
 
 	var payloadList = []string{payload, payload2}
 
-	channel := make(chan error)
-
 	ch := make(chan *nats.Msg, 2)
 	sub, err := js.ChanSubscribe("$GVT.default.DP."+dataProduct+".*.EVENT.>", ch)
 	if err != nil {
-		return fmt.Errorf("js get subscribe failed: %v", err)
+		return fmt.Errorf("jetstream subscribe failed: %v", err)
 	}
 	time.Sleep(1 * time.Second)
 	if err := sub.Unsubscribe(); err != nil {
 		return fmt.Errorf("unsubscribe failed %s", err.Error())
 	}
 
-	go func() {
-		i := 0
-		for msg := range ch {
-			err = proto.Unmarshal(msg.Data, &pe)
-			if err != nil {
-				channel <- fmt.Errorf("Failed to parsing product event: %v", err)
-			}
-
-			r, err := pe.GetContent()
-			if err != nil {
-				channel <- fmt.Errorf("Failed to parsing content: %v", err)
-			}
-			JSONByte, err := json.Marshal(r.AsMap())
-			if err != nil {
-				channel <- fmt.Errorf("Receive payload marshal fail %s", err.Error())
-			}
-			recieveJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
-			regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payloadList[i])[1]
-			regexPayload = ut.FormatJSONData(regexPayload)
-			if recieveJSONStringResult != regexPayload {
-				channel <- fmt.Errorf("payload is not matched")
-			}
-			i++
-		}
-		channel <- nil
-	}()
-
-	time.Sleep(10 * time.Second)
-
-	close(ch)
-
-	if err := <-channel; err != nil {
-		return err
+	if len(ch) != 2 {
+		return fmt.Errorf("expected 2 messages, but got %d", len(ch))
 	}
+	i := 0
+	for msg := range ch {
+		err = proto.Unmarshal(msg.Data, &pe)
+		if err != nil {
+			return fmt.Errorf("Failed to parsing product event: %v", err)
+		}
+
+		r, err := pe.GetContent()
+		if err != nil {
+			return fmt.Errorf("Failed to parsing content: %v", err)
+		}
+		JSONByte, err := json.Marshal(r.AsMap())
+		if err != nil {
+			return fmt.Errorf("Receive payload marshal fail %s", err.Error())
+		}
+		recieveJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
+		regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payloadList[i])[1]
+		regexPayload = ut.FormatJSONData(regexPayload)
+		if recieveJSONStringResult != regexPayload {
+			return fmt.Errorf("payload is not matched")
+		}
+		i++
+		if i == 2 {
+			break
+		}
+	}
+	close(ch)
 
 	if pe.EventName != event {
 		return errors.New("event is not matched")
@@ -365,16 +331,16 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		ut.ClearDataProducts()
 		return ctx, nil
 	})
-	ctx.Given(`^Nats has been opened$`, ut.CheckNatsService)
+	ctx.Given(`^NATS has been opened$`, ut.CheckNatsService)
 	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
 	ctx.Given(`^Create data product with "'(.*?)'" using parameters "'(.*?)'"$`, ut.CreateDataProduct)
 	ctx.Given(`^"'(.*?)'" create ruleset "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
 	ctx.When(`^Publish Event "'(.*?)'" using parameters "'(.*?)'"$`, PublishEventCommand)
-	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has "'(.*?)'" with "'(.*?)'"$`, CheckDPStreamDPExist)
-	ctx.Then(`^Using NATS Jetstream to query GVT_default "'(.*?)'" has "'(.*?)'"$`, QueryJetstreamEventExist)
+	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has a event with payload "'(.*?)'" and type is "'(.*?)'"$`, CheckDPStreamDPExist)
+	ctx.Then(`^Using NATS Jetstream to query GVT_default has a event with payload "'(.*?)'" and type is "'(.*?)'"$`, QueryJetstreamEventExist)
 	ctx.When(`^Update data product "'([^'"]*?)'" using parameters enabled=true$`, UpdateDataProductCommand)
 	ctx.When(`^Update data product "'([^'"]*?)'" ruleset "'([^'"]*?)'" using parameters enabled=true$`, UpdateRulesetCommand)
 	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has no "'(.*?)'"$`, CheckDPStreamDPNotExist)
-	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has "'(.*?)'" with "'(.*?)'" and "'(.*?)'"$`, CheckDPStreamDPEventHasTwoPayload)
-	ctx.Then(`^Cli returns create failed$`, PublishEventCommandFailed)
+	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has two events with payload "'(.*?)'" and "'(.*?)'" and type is "'(.*?)'"$`, CheckDPStreamDPEventHasTwoPayload)
+	ctx.Then(`^CLI returns create failed$`, PublishEventCommandFailed)
 }
