@@ -31,7 +31,7 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
-func DeleteRulesetCommand(productName string, rulesetName string) error {
+func DeleteRulesetCommand(rulesetName string, productName string) error {
 	commandString := "../gravity-cli product ruleset delete "
 	if productName != testutils.NullString {
 		commandString += " " + productName
@@ -51,23 +51,23 @@ func DeleteRulesetCommandFailed() error {
 	if ut.CmdResult.Err != nil {
 		return nil
 	}
-	return fmt.Errorf("ruleset 刪除應該要失敗")
+	return fmt.Errorf("the data product ruleset deletion should fail")
 }
 
 func DeleteRulesetCommandSuccess() error {
 	if ut.CmdResult.Err == nil {
 		return nil
 	}
-	return fmt.Errorf("ruleset 刪除應該要成功")
+	return fmt.Errorf("the data product ruleset deletion should succeed")
 }
 
-func SearchRulesetByCLINotExists(dataProduct string, ruleset string) error {
+func SearchRulesetByCLINotExists(ruleset string, dataProduct string) error {
 	cmd := exec.Command("../gravity-cli", "product", "ruleset", "info", dataProduct, ruleset, "-s", ut.Config.JetstreamURL)
 	err := cmd.Run()
 	if err != nil {
 		return nil
 	}
-	return fmt.Errorf("ruleset 應該不存在")
+	return fmt.Errorf("ruleset should not exist")
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
@@ -76,12 +76,12 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		ut.ClearDataProducts()
 		return ctx, nil
 	})
-	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有 date product "'(.*?)'" enabled "'(.*?)'"$`, ut.CreateDataProduct)
-	ctx.Given(`^已有 data product 的 ruleset "'(.*?)'" "'(.*?)'" enabled "'(.*?)'"$`, ut.CreateDataProductRuleset)
-	ctx.When(`^刪除 "'(.*?)'" 的 ruleset "'(.*?)'"$`, DeleteRulesetCommand)
-	ctx.Then(`^Cli 回傳刪除失敗$`, DeleteRulesetCommandFailed)
-	ctx.Then(`^Cli 回傳刪除成功$`, DeleteRulesetCommandSuccess)
-	ctx.Then(`^使用 gravity-cli 查詢 "'(.*?)'" 的 "'(.*?)'" 不存在$`, SearchRulesetByCLINotExists)
+	ctx.Given(`^Nats has been opened$`, ut.CheckNatsService)
+	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
+	ctx.Given(`^Create data product with "'(.*?)'" using parameters "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.Given(`^Create data product ruleset with "'(.*?)'", "'(.*?)'" using parameters "'(.*?)'"$`, ut.CreateDataProductRuleset)
+	ctx.When(`^Delete ruleset "'(.*?)'" for data product "'(.*?)'"$`, DeleteRulesetCommand)
+	ctx.Then(`^CLI returns exit code 1$`, DeleteRulesetCommandFailed)
+	ctx.Then(`^CLI returned successfully deleted$`, DeleteRulesetCommandSuccess)
+	ctx.Then(`^Using gravity-cli to query that "'(.*?)'" does not exist for "'(.*?)'"$`, SearchRulesetByCLINotExists)
 }
