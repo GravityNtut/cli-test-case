@@ -21,7 +21,7 @@ Scenario:
     Given Create data product ruleset with "'drink'", "'drinkCreated'" using parameters "'[true]'"
     When Delete ruleset "'<RulesetName>'" for data product "'<ProductName>'"
     Then CLI returns exit code 1
-	# And 應有錯誤訊息 "'<Error_message>'"
+	# And The error message should be "'<Error_message>'"
     Examples:
         |  ID  | ProductName  | RulesetName  | Error_message |
         | E1(1)| drink        | NotExists    |               |
