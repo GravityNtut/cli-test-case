@@ -10,6 +10,7 @@ import (
 	"strings"
 	"test-case/testutils"
 	"testing"
+	"time"
 
 	"github.com/cucumber/godog"
 )
@@ -59,7 +60,7 @@ func CreateDataProductCommand(productAmount int, dataProduct string, description
 			}
 		}
 		var cmd *exec.Cmd
-		description := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(description)[1] //移除雙引號
+		description := regexp.MustCompile(`"?([^"]*)"?`).FindStringSubmatch(description)[1]
 		cmd = exec.Command(testutils.GravityCliString, "product", "create", dataProductName, "--desc", description, "--schema", "./assets/schema.json", enabledString)
 		err := cmd.Run()
 		if err != nil {
@@ -94,6 +95,7 @@ func PublishProductEvent(eventAmount int) error {
 			return fmt.Errorf("publish event failed: %s", err.Error())
 		}
 	}
+	time.Sleep(1 * time.Second)
 	return nil
 }
 
