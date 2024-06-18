@@ -1,14 +1,14 @@
 Feature: Data Product create
 
 Scenario:
-Given 已開啟服務 nats
-Given 已開啟服務 dispatcher
+Given NATS has been opened
+Given Dispatcher has been opened
 #Scenario
-	Scenario: 使用者使用product create指令來建立data product，成功情境
-	When 創建 data product "'<ProductName>'" 使用參數 "'<Description>'" "'<Schema>'" "'<Enabled>'"
-	Then Cli 回傳 "'<ProductName>'" 建立成功
-	Then 使用 gravity-cli 查詢 "'<ProductName>'" 存在
-	Then 使用 nats jetstream 查詢 "'<ProductName>'" 存在
+	Scenario Outline: Success scenario for creating a data product
+	When Create data product "'<ProductName>'" using parameters "'<Description>'" "'<Schema>'" "'<Enabled>'"
+	Then Cli returns "'<ProductName>'" created successfully
+	Then Using gravity-cli to query "'<ProductName>'" shows it exist
+	Then Using NATS Jetstream to query "'<ProductName>'" shows it exist
 	Examples:
 	|  ID  | ProductName | Description  			| 		Schema         | Enabled |
 	| M(1) | drink       | description				| ./assets/schema.json | [true]  |
@@ -24,23 +24,23 @@ Given 已開啟服務 dispatcher
 
 
 #Scenario
-	Scenario: 使用者使用product create指令來建立data product，名稱重複
-	When 創建 data product "'<ProductName>'" 使用參數 "'<Description>'" "'<Schema>'" "'<Enabled>'"
-	Then Cli 回傳 "'<ProductName>'" 建立成功
-	Then 使用 gravity-cli 查詢 "'<ProductName>'" 存在
-	Then 使用 nats jetstream 查詢 "'<ProductName>'" 存在
-	When 創建 data product "'<ProductName>'" 使用參數 "'<Description>'" "'<Schema>'" "'<Enabled>'"
-	Then Cli 回傳建立失敗
-	# And 應有錯誤訊息 "'<Error_message>'"
+	Scenario Outline: Create two data products with the same name
+	When Create data product "'<ProductName>'" using parameters "'<Description>'" "'<Schema>'" "'<Enabled>'"
+	Then Cli returns "'<ProductName>'" created successfully
+	Then Using gravity-cli to query "'<ProductName>'" shows it exist
+	Then Using NATS Jetstream to query "'<ProductName>'" shows it exist
+	When Create data product "'<ProductName>'" using parameters "'<Description>'" "'<Schema>'" "'<Enabled>'"
+    Then CLI returns exit code 1
+	# And The error message should be "'<Error_message>'"
 	Examples:
 	|   ID  | ProductName | Description | 		Schema         | Enabled | Error_message  |
 	| E1(1) | drink       | description | ./assets/schema.json | [true]  |			    |
 
 #Scenario
-	Scenario: 使用者使用product create指令來建立data product，失敗情境
-	When 創建 data product "'<ProductName>'" 使用參數 "'<Description>'" "'<Schema>'" "'<Enabled>'"
-	Then Cli 回傳建立失敗
-	# And 應有錯誤訊息 "'<Error_message>'"
+	Scenario Outline: Fail scenario for creating a data product
+	When Create data product "'<ProductName>'" using parameters "'<Description>'" "'<Schema>'" "'<Enabled>'"
+    Then CLI returns exit code 1
+	# And The error message should be "'<Error_message>'"
 	Examples:
 	|   ID  | ProductName   | Description  | 			Schema       			| Enabled | Error_message |
 	| E2(1) | _-*\($\)?@    | description  | 		./assets/schema.json 		| [true]  | 			  |
