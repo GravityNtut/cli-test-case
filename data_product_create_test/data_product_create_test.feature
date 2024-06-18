@@ -7,8 +7,8 @@ Given Dispatcher has been opened
 	Scenario Outline: Success scenario for creating a data product
 	When Create data product "'<ProductName>'" using parameters "'<Description>'" "'<Schema>'" "'<Enabled>'"
 	Then Cli returns "'<ProductName>'" created successfully
-	Then Using gravity-cli to query "'<ProductName>'" shows it exist.
-	Then Using NATS Jetstream to query "'<ProductName>'" shows it exist.
+	Then Using gravity-cli to query "'<ProductName>'" shows it exist
+	Then Using NATS Jetstream to query "'<ProductName>'" shows it exist
 	Examples:
 	|  ID  | ProductName | Description  			| 		Schema         | Enabled |
 	| M(1) | drink       | description				| ./assets/schema.json | [true]  |
@@ -27,8 +27,8 @@ Given Dispatcher has been opened
 	Scenario Outline: Create two data products with the same name
 	When Create data product "'<ProductName>'" using parameters "'<Description>'" "'<Schema>'" "'<Enabled>'"
 	Then Cli returns "'<ProductName>'" created successfully
-	Then Using gravity-cli to query "'<ProductName>'" shows it exist.
-	Then Using NATS Jetstream to query "'<ProductName>'" shows it exist.
+	Then Using gravity-cli to query "'<ProductName>'" shows it exist
+	Then Using NATS Jetstream to query "'<ProductName>'" shows it exist
 	When Create data product "'<ProductName>'" using parameters "'<Description>'" "'<Schema>'" "'<Enabled>'"
     Then CLI returns exit code 1
 	# And The error message should be "'<Error_message>'"

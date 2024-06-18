@@ -53,7 +53,7 @@ func CreateDataProductCommand(dataProduct string, description string, schema str
 	} else if enabled == testutils.FalseString {
 		commandString += " --enabled=false"
 	} else if enabled != testutils.IgnoreString {
-		return errors.New("Invalid parameter for enable")
+		return errors.New("invalid parameter for enable")
 	}
 	commandString += " -s " + ut.Config.JetstreamURL
 	err := ut.ExecuteShell(commandString)
@@ -69,14 +69,14 @@ func CreateDataProductCommandSuccess(productName string) error {
 	if outStr == "Product \""+productName+"\" was created\n" {
 		return nil
 	}
-	return errors.New("The message returned by the CLI is incorrect")
+	return errors.New("the message returned by the CLI is incorrect")
 }
 
 func CreateDataProductCommandFail() error {
 	if ut.CmdResult.Err != nil {
 		return nil
 	}
-	return errors.New("The message returned by the CLI is incorrect")
+	return errors.New("the message returned by the CLI is incorrect")
 }
 
 func SearchDataProductByCLISuccess(dataProduct string) error {
@@ -103,7 +103,7 @@ func SearchDataProductByJetstreamSuccess(dataProduct string) error {
 			return nil
 		}
 	}
-	return errors.New("Data product creation in Jetstream was unsuccessful")
+	return errors.New("data product creation in Jetstream was unsuccessful")
 }
 
 // TODO
@@ -123,7 +123,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.When(`^Create data product "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductCommand)
 	ctx.Then(`^Cli returns "'(.*?)'" created successfully$`, CreateDataProductCommandSuccess)
 	ctx.Then(`^CLI returns exit code 1$`, CreateDataProductCommandFail)
-	ctx.Then(`^Using gravity-cli to query "'(.*?)'" shows it exist.$`, SearchDataProductByCLISuccess)
-	ctx.Then(`^Using NATS Jetstream to query "'(.*?)'" shows it exist.$`, SearchDataProductByJetstreamSuccess)
+	ctx.Then(`^Using gravity-cli to query "'(.*?)'" shows it exist$`, SearchDataProductByCLISuccess)
+	ctx.Then(`^Using NATS Jetstream to query "'(.*?)'" shows it exist$`, SearchDataProductByJetstreamSuccess)
 	// ctx.Then(`^The error message should be "'(.*?)'"$`, AssertErrorMessages)
 }
