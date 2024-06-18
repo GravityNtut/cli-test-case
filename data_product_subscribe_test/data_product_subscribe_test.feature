@@ -8,7 +8,7 @@ Given Dispatcher has been opened
 	Given Create data product "'drink'"
     Given Create data product "'drink'" with ruleset "'drinkCreated'"
     Given Publish 10 Events
-    Given Set subscribe Timeout with "'1'" seconnd
+    Given Set subscribe timeout with "'1'" second
     When Subscribe data product "'<ProductName>'" using parameters "'<SubName>'" "'<Partitions>'" "'<Seq>'"
     Then The CLI returns all events data within the "'<Partitions>'" and after "'<Seq>'"
     Examples:

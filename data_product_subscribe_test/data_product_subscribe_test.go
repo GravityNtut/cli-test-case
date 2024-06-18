@@ -105,7 +105,7 @@ func DisplayData() error {
 
 func PublishProductEvent() error {
 	EventCount = 10
-	// Generate 7 events witch id is 87
+	// Generate 7 events which id is 87
 	for i := 1; i <= EventCount-3; i++ {
 		result := fmt.Sprintf(`{"id":87, "name":"test%d", "kcal":%d, "price":%d}`, i, i*100, i+20)
 		cmd := exec.Command(testutils.GravityCliString, "pub", Event, result, "-s", ut.Config.JetstreamURL)
@@ -113,7 +113,7 @@ func PublishProductEvent() error {
 			return fmt.Errorf("publish event failed: %s", err.Error())
 		}
 	}
-	// Generate 3 events witch id is 99
+	// Generate 3 events which id is 99
 	for i := EventCount - 2; i <= EventCount; i++ {
 		result := fmt.Sprintf(`{"id":99, "name":"test%d", "kcal":%d, "price":%d}`, i, i*300, i+30)
 		cmd := exec.Command(testutils.GravityCliString, "pub", Event, result, "-s", ut.Config.JetstreamURL)
@@ -190,8 +190,7 @@ func ValidateSubResult(partitionString string, seqString string) error {
 	}
 
 	if uint64(len(resultStringList)) != numbersOfEvents {
-		errString := fmt.Sprintf("The number of retrieved events differs from the number of published events., Expect: %d, Retrieve: %d", numbersOfEvents, len(resultStringList))
-		return errors.New(errString)
+		return fmt.Errorf("the number of retrieved events differs from the number of published events. Expect: %d, Retrieve: %d", numbersOfEvents, len(resultStringList))
 	}
 	for i, jsonData := range resultStringList {
 		i := uint64(i)
@@ -265,7 +264,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^Create data product "'([^'"]*?)'"$`, CreateDataProduct)
 	ctx.Given(`^Create data product "'([^'"]*?)'" with ruleset "'([^'"]*?)'"$`, CreateDataProductRuleset)
 	ctx.Given(`^Publish 10 Events$`, PublishProductEvent)
-	ctx.Given(`^Set subscribe Timeout with "'(.*?)'" seconnd$`, SetTimeout)
+	ctx.Given(`^Set subscribe timeout with "'(.*?)'" second$`, SetTimeout)
 	ctx.When(`^Subscribe data product "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'" "'(.*?)'"`, SubscribeDataProductCommand)
 	ctx.Then(`^The CLI returns all events data within the "'(.*?)'" and after "'(.*?)'"$`, ValidateSubResult)
 	ctx.Then(`^The CLI returns exit code 1$`, SubCommandFail)
