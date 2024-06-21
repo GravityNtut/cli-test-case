@@ -105,7 +105,7 @@ func UpdateRulesetCommand(dataProduct string, ruleset string, method string, eve
 	} else if enabled == testutils.FalseString {
 		commandString += " --enabled=false"
 	} else if enabled != testutils.IgnoreString {
-		return errors.New("enabled 參數錯誤")
+		return errors.New("enabled parameter incorrect")
 	}
 	if handler != testutils.IgnoreString {
 		commandString += " --handler " + handler
@@ -125,14 +125,14 @@ func UpdateRulesetCommandSuccess() error {
 	if ut.CmdResult.Err == nil {
 		return nil
 	}
-	return errors.New("ruleset 更改應該要成功")
+	return errors.New("update ruleset should success")
 }
 
 func UpdateRulesetCommandFailed() error {
 	if ut.CmdResult.Err != nil {
 		return nil
 	}
-	return errors.New("ruleset 更改應該要失敗")
+	return errors.New("update ruleset should fail")
 }
 
 func ValidateRulesetUpdate(dataProduct string, ruleset string, method string, event string, pk string, desc string, handler string, schema string, enabled string) error {
@@ -148,7 +148,7 @@ func ValidateRulesetUpdate(dataProduct string, ruleset string, method string, ev
 	entry, _ := kv.Get(dataProduct)
 	err = json.Unmarshal((entry.Value()), &jsonData)
 	if err != nil {
-		fmt.Println("解碼 JSON 時出現錯誤:", err)
+		fmt.Println("error occurred while decoding JSON: ", err)
 		return err
 	}
 
@@ -199,7 +199,7 @@ func ValidateRulesetNotChange(dataProduct string, ruleset string) error {
 
 	ruleByte, _ := json.Marshal(jsonData.Rules[ruleset])
 	if string(ruleByte) != originRuleStr {
-		return errors.New("ruleset資料有異動")
+		return errors.New("ruleset parameters changed")
 	}
 	return nil
 }
@@ -215,15 +215,15 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		ut.ClearDataProducts()
 		return ctx, nil
 	})
-	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有 data product "'(.*?)'" enabled "'(.*?)'"$`, ut.CreateDataProduct)
-	ctx.Given(`^已有 data product 的 ruleset "'(.*?)'" "'(.*?)'" enabled "'(.*?)'"$`, ut.CreateDataProductRuleset)
-	ctx.Given(`^儲存 nats 現有 data product ruleset 副本 "'(.*?)'" "'(.*?)'"$`, SaveRuleset)
-	ctx.When(`^更新 dataproduct "'(.*?)'" ruleset "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, UpdateRulesetCommand)
-	ctx.Then(`^Cli 回傳更改成功$`, UpdateRulesetCommandSuccess)
-	ctx.Then(`^Cli 回傳更改失敗$`, UpdateRulesetCommandFailed)
-	ctx.Then(`^使用 nats jetstream查詢 "'(.*?)'" 的 "'(.*?)'" 參數更改成功 "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, ValidateRulesetUpdate)
-	// ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
-	ctx.Then(`^使用 nats jetstream 查詢 data product "'(.*?)'" 的 "'(.*?)'" 資料無任何改動$`, ValidateRulesetNotChange)
+	ctx.Given(`^NATS has been opened$`, ut.CheckNatsService)
+	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
+	ctx.Given(`^Create data product "'(.*?)'" and enabled is "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.Given(`^Create "'(.*?)'" 's ruleset "'(.*?)'" and enabled is "'(.*?)'"$`, ut.CreateDataProductRuleset)
+	ctx.Given(`^Store NATS copy of existing data product "'(.*?)'" 's ruleset "'(.*?)'"$`, SaveRuleset)
+	ctx.When(`^Update data product "'(.*?)'" 's ruleset "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, UpdateRulesetCommand)
+	ctx.Then(`^Check updating ruleset success$`, UpdateRulesetCommandSuccess)
+	ctx.Then(`^CLI returns exit code 1$`, UpdateRulesetCommandFailed)
+	ctx.Then(`^Use NATS jetstream to query the "'(.*?)'" 's "'(.*?)'" update successfully and parameters are "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, ValidateRulesetUpdate)
+	// ctx.Then(`^The error message should be "'(.*?)'"$`, AssertErrorMessages)
+	ctx.Then(`^Use NATS jetstream to query the "'(.*?)'" 's "'(.*?)'" without changing parameters$`, ValidateRulesetNotChange)
 }

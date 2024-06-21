@@ -1,20 +1,20 @@
 Feature: Data Product ruleset update
 
 Scenario:
-Given 已開啟服務 nats
-Given 已開啟服務 dispatcher
+Given NATS has been opened
+Given Dispatcher has been opened
 #Scenario
-	Scenario: 針對更新data product ruleset成功情境
-	Given 已有 data product "'drink'" enabled "'[true]'"
-    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'" enabled "'<GivenRSEnabled>'"
-	When 更新 dataproduct "'<ProductName>'" ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
-	Then Cli 回傳更改成功
-	And 使用 nats jetstream查詢 "'drink'" 的 "'drinkCreated'" 參數更改成功 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
+	Scenario: Success scenario for updating data product ruleset
+	Given Create data product "'drink'" and enabled is "'[true]'"
+    Given Create "'drink'" 's ruleset "'drinkCreated'" and enabled is "'<GivenRSEnabled>'"
+	When Update data product "'<ProductName>'" 's ruleset "'<Ruleset>'" using parameters "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
+	Then Check updating ruleset success
+	And Use NATS jetstream to query the "'drink'" 's "'drinkCreated'" update successfully and parameters are "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
 	Examples:
     |  ID  | ProductName | Ruleset       | Event         | Method    | 		Schema          | 		Handler_script	   | Pk       | Desc          | Enabled  | GivenRSEnabled |
 	| M(1) | drink       | drinkCreated  | drinkCreated  | create    | ./assets/schema.json |  ./assets/handler.js     | id       |  description  | [true]   |   [ignore]   |
 	| M(2) | drink       | drinkCreated  | drinkCreated  | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |   [ignore]   |
-    #單獨update method會跳Error: Invalid method
+    #Error occurred while using alone update method: Invalid method
     | M(3) | drink       | drinkCreated  | [ignore]      | create    | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |   [ignore]   |
     | M(4) | drink       | drinkCreated  | [ignore]      | [ignore]  |./assets/schema.json  | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |   [ignore]   |
     | M(5) | drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 	./assets/handler.js    | [ignore] | [ignore]      | [ignore] |   [ignore]   |
@@ -29,14 +29,14 @@ Given 已開啟服務 dispatcher
 	| M(14)| drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |   [ignore]   |
 
 #Scenario
-	Scenario: 針對更新data product ruleset失敗情境
-	Given 已有 data product "'drink'" enabled "'[true]'"
-    Given 已有 data product 的 ruleset "'drink'" "'drinkCreated'" enabled "'[ignore]'"
-	Given 儲存 nats 現有 data product ruleset 副本 "'drink'" "'drinkCreated'" 
-	When 更新 dataproduct "'<ProductName>'" ruleset "'<Ruleset>'" 使用參數 "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
-	Then Cli 回傳更改失敗
-	# And 應有錯誤訊息 "'<Error_message>'"
-	And 使用 nats jetstream 查詢 data product "'drink'" 的 "'drinkCreated'" 資料無任何改動
+	Scenario Outline: Fail scenario for updating data product ruleset
+	Given Create data product "'drink'" and enabled is "'[true]'"
+    Given Create "'drink'" 's ruleset "'drinkCreated'" and enabled is "'[ignore]'"
+	Given Store NATS copy of existing data product "'drink'" 's ruleset "'drinkCreated'"
+	When Update data product "'<ProductName>'" 's ruleset "'<Ruleset>'" using parameters "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
+	Then CLI returns exit code 1
+	# And The error message should be "'<Error_message>'"
+	And Use NATS jetstream to query the "'drink'" 's "'drinkCreated'" without changing parameters
 	Examples:
 	|  ID   | ProductName | Ruleset       | Event         | Method    | 		Schema         	 	 | 		Handler_script	   | Pk       | Desc          | Enabled  | Error_message |
 	| E1(1) | [null]	  | [null]		  | [ignore]	  | [ignore]  | 		[ignore]        	 | 		  [ignore]         | [ignore] | [ignore]      | [ignore] | 		         |
