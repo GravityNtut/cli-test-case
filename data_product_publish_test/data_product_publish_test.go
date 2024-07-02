@@ -9,6 +9,7 @@ import (
 	"log"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"test-case/testutils"
 	"testing"
@@ -39,6 +40,17 @@ func TestFeatures(t *testing.T) {
 	if suite.Run() != 0 {
 		t.Fatal("non-zero status returned, failed to run feature tests")
 	}
+}
+
+func CreateDataProduct(dataProduct string, enabled string) error {
+	if enabled == testutils.TrueString {
+		cmd := exec.Command(testutils.GravityCliString, "product", "create", dataProduct, "--enabled", "--schema", "./assets/schema.json", "-s", ut.Config.JetstreamURL)
+		return cmd.Run()
+	} else if enabled == testutils.IgnoreString || enabled == testutils.FalseString {
+		cmd := exec.Command(testutils.GravityCliString, "product", "create", dataProduct, "--schema", "./assets/schema.json", "-s", ut.Config.JetstreamURL)
+		return cmd.Run()
+	}
+	return errors.New("dataProduct create 參數錯誤")
 }
 
 func CreateDataProductRuleset(dataProduct string, ruleset string, RSMethod string, RSPk string, RSHandler string, RSSchema string, RSEnabled string) error {
@@ -76,6 +88,28 @@ func PublishEventCommand(event string, payload string) error {
 type JSONData struct {
 	Event   string `json:"event"`
 	Payload string `json:"payload"`
+}
+
+func QueryJetstreamEventCountIncrease() error {
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
+	defer nc.Close()
+
+	js, err := nc.JetStream()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ch := make(chan *nats.Msg, 1)
+	if _, err := js.ChanSubscribe("$GVT.default.EVENT.*", ch); err != nil {
+		return fmt.Errorf("jetstream subscribe failed: %v", err)
+	}
+
+	select {
+	case <-ch:
+		return nil
+	case <-time.After(10 * time.Second):
+		return errors.New("subscribe out of time")
+	}
 }
 
 func QueryJetstreamEventExist(payload string, event string) error {
@@ -325,6 +359,14 @@ func PublishEventCommandFailed() error {
 	return fmt.Errorf("publish should be failed")
 }
 
+func WaitOneSecond(WaitTime string) {
+	seconds, err := strconv.Atoi(WaitTime)
+	if err != nil {
+		panic(err)
+	}
+	time.Sleep(time.Duration(seconds) * time.Second)
+}
+
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
@@ -333,7 +375,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	})
 	ctx.Given(`^NATS has been opened$`, ut.CheckNatsService)
 	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
-	ctx.Given(`^Create data product with "'(.*?)'" using parameters "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.Given(`^Create data product "'(.*?)'" using parameters "'(.*?)'"$`, CreateDataProduct)
 	ctx.Given(`^"'(.*?)'" create ruleset "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
 	ctx.When(`^Publish Event "'(.*?)'" using parameters "'(.*?)'"$`, PublishEventCommand)
 	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has a event with payload "'(.*?)'" and type is "'(.*?)'"$`, CheckDPStreamDPExist)
@@ -343,4 +385,6 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has no "'(.*?)'"$`, CheckDPStreamDPNotExist)
 	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has two events with payload "'(.*?)'" and "'(.*?)'" and type is "'(.*?)'"$`, CheckDPStreamDPEventHasTwoPayload)
 	ctx.Then(`^CLI returns create failed$`, PublishEventCommandFailed)
+	ctx.Then(`^Query Jetstream GVT_default message Increase$`, QueryJetstreamEventCountIncrease)
+	ctx.Then(`^Wait "'(.*?)'" second$`, WaitOneSecond)
 }
