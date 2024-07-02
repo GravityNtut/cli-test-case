@@ -120,7 +120,7 @@ func DataProductNotChanges(dataProduct string) error {
 	if string(entry.Value()) == originJSONData {
 		return nil
 	}
-	return errors.New("Does not match the original data")
+	return errors.New("does not match the original data")
 }
 
 func DataProductUpdateSuccess(dataProduct string, desc string, schema string, enabled string) error {
