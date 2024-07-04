@@ -9,8 +9,8 @@ Scenario:
     Given Create data product "'drink'" and enabled is "'[true]'"
     When "'<ProductName>'" add ruleset "'<Ruleset>'" using parameters "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
     Then Check adding ruleset success
-    Then Use gravity-cli to query the "'<ProductName>'" 's "'<Ruleset>'" exists
-    Then Use NATS jetstream to query the "'<ProductName>'" 's "'<Ruleset>'" exists and parameters "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'" are correct
+    Then Use gravity-cli to query the "'<ProductName>'" "'<Ruleset>'" exists
+    Then Use NATS jetstream to query the "'<ProductName>'" "'<Ruleset>'" exists and parameters "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'" are correct
     Examples:
         |  ID   | ProductName | Ruleset       | Method       | Event         |   Pk          |  Desc             |          Handler_script       |           Schema               | Enabled |
         | M(1)  | drink       | drinkCreated  | create       | drinkCreated  |   id          |  description      |     ./assets/handler.js       |      ./assets/schema.json      | [true]  |
@@ -41,8 +41,8 @@ Scenario:
     Given Create data product "'drink'" and enabled is "'[true]'"
     When "'<ProductName>'" add ruleset "'<Ruleset1>'" using parameters "'<Method>'" "'<Event1>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
     Then Check adding ruleset success
-    Then Use gravity-cli to query the "'<ProductName>'" 's "'<Ruleset1>'" exists
-    Then Use NATS jetstream to query the "'<ProductName>'" 's "'<Ruleset1>'" exists and parameters "'<Method>'" "'<Event1>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'" are correct
+    Then Use gravity-cli to query the "'<ProductName>'" "'<Ruleset1>'" exists
+    Then Use NATS jetstream to query the "'<ProductName>'" "'<Ruleset1>'" exists and parameters "'<Method>'" "'<Event1>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'" are correct
     When "'<ProductName>'" add ruleset "'<Ruleset2>'" using parameters "'<Method>'" "'<Event2>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
     Then CLI returns exit code 1
     # And The error message should be "'<Error_message>'"
