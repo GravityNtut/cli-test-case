@@ -1,14 +1,14 @@
 Feature: Data Product update
 
 Scenario:
-Given 已開啟服務 nats
-Given 已開啟服務 dispatcher
+Given NATS has been opened
+Given Dispatcher has been opened
 #Scenario
-	Scenario: 使用者使用product update指令更新data product，成功情境
-	Given 已有 data product "'drink'" enabled "'<GivenDPEnabled>'"
-	When 更新 data product "'<ProductName>'" 使用參數 "'<Description>'" "'<Enabled>'" "'<Schema>'"
-	Then Cli 回傳更改成功
-	And 使用 nats jetstream 查詢 "'drink'" 參數更改成功 "'<Description>'" "'<Schema>'" "'<Enabled>'"
+	Scenario Outline: Success scenario for updating a data product
+	Given Create data product "'drink'" and enabled is "'<GivenDPEnabled>'"
+	When Update the name of data product to "'<ProductName>'" using parameters "'<Description>'" "'<Enabled>'" "'<Schema>'"
+	Then Check updating data product success
+	And Use NATS jetstream to query the "'drink'" update successfully and parameters are "'<Description>'" "'<Schema>'" "'<Enabled>'" 
 	Examples:
 	|  ID  | ProductName | Description  |		 Schema     	| Enabled   | GivenDPEnabled |
 	| M(1) | drink       | [ignore]     |		[ignore]   		| [ignore]  |   [false]    |
@@ -21,13 +21,13 @@ Given 已開啟服務 dispatcher
 	| M(8) | drink       |  description | ./assets/schema.json  | [true]    |   [false]    |
 
 #Scenario
-	Scenario: 使用者使用product update指令更新data product，失敗情境
-	Given 已有 data product "'drink'" enabled "'[true]'"
-	Given 儲存 nats 現有 data product 副本 "'drink'"
-	When 更新 data product "'<ProductName>'" 使用參數 "'<Description>'" "'<Enabled>'" "'<Schema>'"
-	Then Cli 回傳更改失敗
-	# And 應有錯誤訊息 "'<Error_message>'"
-	And 使用 nats jetstream 查詢 "'drink'" 參數無任何改動
+	Scenario Outline: Fail scenario for updating data product
+	Given Create data product "'drink'" and enabled is "'[true]'"
+	Given Store NATS copy of existing data product "'drink'"
+	When Update the name of data product to "'<ProductName>'" using parameters "'<Description>'" "'<Enabled>'" "'<Schema>'"
+	Then CLI returns exit code 1
+	# And The error message should be "'<Error_message>'"
+	And Use NATS jetstream to query the "'drink'" without changing parameters
 	Examples:
 	|  ID   | ProductName | Description  | 	    Schema         		 | Enabled   | Error_message   |
 	| E1(1) | not_exist   | [ignore]  	 | 		[ignore] 			 | [false]  |                 |

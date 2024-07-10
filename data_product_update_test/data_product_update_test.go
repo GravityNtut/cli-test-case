@@ -57,7 +57,7 @@ func UpdateDataProductCommand(dataProduct string, description string, enabled st
 	} else if enabled == testutils.FalseString {
 		commandString += " --enabled=false"
 	} else if enabled != testutils.IgnoreString {
-		return errors.New("enabled 參數錯誤")
+		return errors.New("enabled parameter incorrect")
 	}
 
 	if schema != testutils.IgnoreString {
@@ -75,7 +75,7 @@ func UpdateDataProductCommandFail() error {
 	if ut.CmdResult.Err != nil {
 		return nil
 	}
-	return errors.New("更新資料錯誤")
+	return errors.New("update data product fail")
 }
 
 func SearchDataProductByJetstreamSuccess(dataProduct string) error {
@@ -94,7 +94,7 @@ func SearchDataProductByJetstreamSuccess(dataProduct string) error {
 			return nil
 		}
 	}
-	return errors.New("jetstream裡未創建成功")
+	return errors.New("the data product was not created successfully in jetstream")
 }
 
 // func AssertErrorMessages(errorMessage string) error {
@@ -102,7 +102,7 @@ func SearchDataProductByJetstreamSuccess(dataProduct string) error {
 // 	if outErr == errorMessage {
 // 		return nil
 // 	}
-// 	return errors.New("Cli回傳訊息錯誤")
+// 	return errors.New("the error message should be: %s", errorMessage)
 // }
 
 func DataProductNotChanges(dataProduct string) error {
@@ -120,7 +120,7 @@ func DataProductNotChanges(dataProduct string) error {
 	if string(entry.Value()) == originJSONData {
 		return nil
 	}
-	return errors.New("與原始資料不符")
+	return errors.New("does not match the original data")
 }
 
 func DataProductUpdateSuccess(dataProduct string, desc string, schema string, enabled string) error {
@@ -136,7 +136,7 @@ func DataProductUpdateSuccess(dataProduct string, desc string, schema string, en
 	entry, _ := kv.Get(dataProduct)
 	err = json.Unmarshal((entry.Value()), &newJSONData)
 	if err != nil {
-		fmt.Println("解碼 JSON 時出現錯誤:", err)
+		fmt.Println("error occurred while decoding JSON: ", err)
 		return err
 	}
 
@@ -153,14 +153,14 @@ func DataProductUpdateSuccess(dataProduct string, desc string, schema string, en
 	}
 
 	if dataProduct != newJSONData.Name {
-		return errors.New("資料更新失敗")
+		return errors.New("update data error")
 	}
 	return nil
 }
 
 func UpdateDataProductCommandSuccess() error {
 	if ut.CmdResult.Err != nil {
-		return errors.New("更新資料錯誤")
+		return errors.New("update data fail")
 	}
 	return nil
 }
@@ -189,14 +189,14 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		return ctx, nil
 	})
 
-	ctx.Given(`^已開啟服務 nats$`, ut.CheckNatsService)
-	ctx.Given(`^已開啟服務 dispatcher$`, ut.CheckDispatcherService)
-	ctx.Given(`^已有 data product "'(.*?)'" enabled "'(.*?)'"$`, ut.CreateDataProduct)
-	ctx.Given(`^儲存 nats 現有 data product 副本 "'(.*?)'"$`, StoreNowDataProduct)
-	ctx.When(`^更新 data product "'(.*?)'" 使用參數 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, UpdateDataProductCommand)
-	ctx.Then(`^Cli 回傳更改成功$`, UpdateDataProductCommandSuccess)
-	ctx.Then(`^Cli 回傳更改失敗$`, UpdateDataProductCommandFail)
-	// ctx.Then(`^應有錯誤訊息 "'(.*?)'"$`, AssertErrorMessages)
-	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 參數更改成功 "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, DataProductUpdateSuccess)
-	ctx.Then(`^使用 nats jetstream 查詢 "'(.*?)'" 參數無任何改動$`, DataProductNotChanges)
+	ctx.Given(`^NATS has been opened$`, ut.CheckNatsService)
+	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
+	ctx.Given(`^Create data product "'(.*?)'" and enabled is "'(.*?)'"$`, ut.CreateDataProduct)
+	ctx.Given(`^Store NATS copy of existing data product "'(.*?)'"$`, StoreNowDataProduct)
+	ctx.When(`^Update the name of data product to "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, UpdateDataProductCommand)
+	ctx.Then(`^Check updating data product success$`, UpdateDataProductCommandSuccess)
+	ctx.Then(`^CLI returns exit code 1$`, UpdateDataProductCommandFail)
+	// ctx.Then(`^The error message should be "'(.*?)'"$`, AssertErrorMessages)
+	ctx.Then(`^Use NATS jetstream to query the "'(.*?)'" update successfully and parameters are "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, DataProductUpdateSuccess)
+	ctx.Then(`^Use NATS jetstream to query the "'(.*?)'" without changing parameters$`, DataProductNotChanges)
 }
