@@ -14,7 +14,8 @@ Scenario:
     When Update data product "'drink'" using parameters enabled=true
     Then Wait "'1'" second
     When Update data product "'drink'" ruleset "'drinkEvent'" using parameters enabled=true
-    Then Query GVT_default_DP_"'drink'" has a event with payload "'<Payload>'" and type is "'<Event>'"
+    #When Publish Event "'<Event>'" using parameters "''{"id":222,"uid":1,"name":"test","price":100,"kcal":50}''"
+    Then Query GVT_default_DP_"'drink'" has a event with payload "'<Payload>'" and type is "'<Event>'" and its match with "'<RSSchema>'"
     Examples:
         |   ID   | Event      |                    Payload                             | RSMethod |       RSHandler         |       RSSchema                    | RSPk     | RSEnabled | DPEnabled |
         |  M(1)  | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js     | ./assets/schema.json              | id       | [true]    | [true]    |
@@ -59,7 +60,7 @@ Scenario:
     When Publish Event "'<Event>'" using parameters "'<Payload>'"
     When Update data product "'drink'" ruleset "'drinkEvent'" using parameters enabled=true
     When Update data product "'drink'" using parameters enabled=true
-    Then Query GVT_default_DP_"'drink'" has a event with payload "'<Payload>'" and type is "'<Event>'"
+    Then Query GVT_default_DP_"'drink'" has a event with payload "'<Payload>'" and type is "'<Event>'" and its match with "'<RSSchema>'"
     Examples:
         |   ID   | Event      |                    Payload                     | RSMethod |       RSHandler     |       RSSchema       | RSPk | RSEnabled | DPEnabled |
         |  E1(1) | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js | ./assets/schema.json | id   | [false]   | [false]   |
@@ -113,8 +114,8 @@ Scenario:
     Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
     Given "'drink2'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
     When Publish Event "'<Event>'" using parameters "'<Payload>'"
-    Then Query GVT_default_DP_"'drink'" has a event with payload "'<Payload>'" and type is "'<Event>'"
-    Then Query GVT_default_DP_"'drink2'" has a event with payload "'<Payload>'" and type is "'<Event>'"
+    Then Query GVT_default_DP_"'drink'" has a event with payload "'<Payload>'" and type is "'<Event>'" and its match with "'<RSSchema>'"
+    Then Query GVT_default_DP_"'drink2'" has a event with payload "'<Payload>'" and type is "'<Event>'" and its match with "'<RSSchema>'"
     Examples:
         |    ID   |    Event   |                    Payload                     | RSMethod |         RSHandler           |               RSSchema            |    RSPk    | RSEnabled |    DPEnabled    |
         |  E4(1)  | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' |  create  |      assets/handler.js      |          assets/schema.json       |    id      |  [true]   |      [true]     |

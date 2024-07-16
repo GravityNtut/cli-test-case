@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -207,7 +208,7 @@ func UpdateRulesetCommand(dataProduct string, ruleset string) error {
 	return nil
 }
 
-func CheckDPStreamDPExist(dataProduct string, payload string, event string) error {
+func CheckDPStreamDPExist(dataProduct string, payload string, event string, schemaPath string) error {
 	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
 	defer nc.Close()
 
@@ -248,6 +249,8 @@ func CheckDPStreamDPExist(dataProduct string, payload string, event string) erro
 	}
 	recieveJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
 	regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payload)[1]
+	// fmt.Println("regexPayload: ", regexPayload)
+	// fmt.Println("recieveJSONStringResult: ", recieveJSONStringResult)
 
 	regexPayload = ut.FormatJSONData(regexPayload)
 
@@ -268,7 +271,7 @@ func CheckDPStreamDPExist(dataProduct string, payload string, event string) erro
 		return fmt.Errorf("Failed to unmarshal payload JSON: %s", err.Error())
 	}
 
-	filteredMap := filterMapByKeys(receivedMap, payloadMap)
+	filteredMap := filterMapByKeys(payloadMap, schemaPath)
 
 	filteredJSON, err := json.Marshal(filteredMap)
 	if err != nil {
@@ -276,6 +279,8 @@ func CheckDPStreamDPExist(dataProduct string, payload string, event string) erro
 	}
 
 	filteredJSONStringResult := strings.Join(strings.Fields(string(filteredJSON)), "")
+	fmt.Println("filteredJSONStringResult: ", filteredJSONStringResult)
+	fmt.Println("recieveJSONStringResult: ", recieveJSONStringResult)
 	if filteredJSONStringResult != recieveJSONStringResult {
 		return errors.New("payload is not matched")
 	}
@@ -283,10 +288,28 @@ func CheckDPStreamDPExist(dataProduct string, payload string, event string) erro
 	return nil
 }
 
-func filterMapByKeys(source, keys map[string]interface{}) map[string]interface{} {
+func loadSchema(filePath string) (map[string]interface{}, error) {
+	bytes, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+	var schema map[string]interface{}
+	err = json.Unmarshal(bytes, &schema)
+	if err != nil {
+		return nil, err
+	}
+	return schema, nil
+}
+
+func filterMapByKeys(receivedMap map[string]interface{}, schemaPath string) map[string]interface{} {
+	schema, err := loadSchema(schemaPath)
+	if err != nil {
+		return nil
+	}
+	
 	filtered := make(map[string]interface{})
-	for key := range keys {
-		if value, exists := source[key]; exists {
+	for key := range schema {
+        if value, exists := receivedMap[key]; exists {
 			filtered[key] = value
 		}
 	}
@@ -378,7 +401,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Given(`^Create data product "'(.*?)'" using parameters "'(.*?)'"$`, CreateDataProduct)
 	ctx.Given(`^"'(.*?)'" create ruleset "'(.*?)'" using parameters "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'" "'(.*?)'"$`, CreateDataProductRuleset)
 	ctx.When(`^Publish Event "'(.*?)'" using parameters "'(.*?)'"$`, PublishEventCommand)
-	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has a event with payload "'(.*?)'" and type is "'(.*?)'"$`, CheckDPStreamDPExist)
+	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has a event with payload "'(.*?)'" and type is "'(.*?)'" and its match with "'(.*?)'"$`, CheckDPStreamDPExist)
 	ctx.Then(`^Using NATS Jetstream to query GVT_default has a event with payload "'(.*?)'" and type is "'(.*?)'"$`, QueryJetstreamEventExist)
 	ctx.When(`^Update data product "'([^'"]*?)'" using parameters enabled=true$`, UpdateDataProductCommand)
 	ctx.When(`^Update data product "'([^'"]*?)'" ruleset "'([^'"]*?)'" using parameters enabled=true$`, UpdateRulesetCommand)
