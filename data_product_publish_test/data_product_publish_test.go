@@ -176,10 +176,8 @@ func CheckDPStreamDPNotExist(dataProduct string) error {
 	case <-ch:
 		return fmt.Errorf("expected not publish in GVT_default_DP，but now in GVT_default_DP")
 	case <-time.After(5 * time.Second):
-
+		return nil
 	}
-
-	return nil
 }
 
 func Base64ToString(base64Str string) (string, error) {
