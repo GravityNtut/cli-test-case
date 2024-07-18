@@ -1,7 +1,6 @@
 package dataproductpublish
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -90,31 +89,6 @@ func PublishEventCommand(event string, payload string) error {
 type JSONData struct {
 	Event   string `json:"event"`
 	Payload string `json:"payload"`
-}
-
-func QueryJetstreamEventCountIncrease() error {
-	nc, err := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
-	if err != nil {
-		return fmt.Errorf("nats connect failed %s", err.Error())
-	}
-	defer nc.Close()
-
-	js, err := nc.JetStream()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	ch := make(chan *nats.Msg, 1)
-	if _, err := js.ChanSubscribe("$GVT.default.EVENT.*", ch); err != nil {
-		return fmt.Errorf("jetstream subscribe failed: %v", err)
-	}
-
-	select {
-	case <-ch:
-		return nil
-	case <-time.After(10 * time.Second):
-		return errors.New("subscribe out of time")
-	}
 }
 
 func QueryJetstreamEventExist(payload string, event string) error {
@@ -240,23 +214,20 @@ func CheckDPStreamDPExist(dataProduct string, payload string, event string, sche
 
 	err = proto.Unmarshal(msg.Data, &pe)
 	if err != nil {
-		return fmt.Errorf("Failed to parsing product event: %v", err)
+		return fmt.Errorf("failed to parsing product event: %v", err)
 	}
 
 	r, err := pe.GetContent()
 	if err != nil {
-		return fmt.Errorf("Failed to parsing content: %v", err)
+		return fmt.Errorf("failed to parsing content: %v", err)
 	}
 
 	JSONByte, err := json.Marshal(r.AsMap())
 	if err != nil {
-		return fmt.Errorf("Receive payload marshal fail %s", err.Error())
+		return fmt.Errorf("receive payload marshal fail %s", err.Error())
 	}
 	recieveJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
 	regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payload)[1]
-	// fmt.Println("regexPayload: ", regexPayload)
-	// fmt.Println("recieveJSONStringResult: ", recieveJSONStringResult)
-
 	regexPayload = ut.FormatJSONData(regexPayload)
 
 	if pe.EventName != event {
@@ -268,24 +239,22 @@ func CheckDPStreamDPExist(dataProduct string, payload string, event string, sche
 
 	err = json.Unmarshal([]byte(recieveJSONStringResult), &receivedMap)
 	if err != nil {
-		return fmt.Errorf("Failed to unmarshal received JSON: %s", err.Error())
+		return fmt.Errorf("failed to unmarshal received JSON: %s", err.Error())
 	}
 
 	err = json.Unmarshal([]byte(regexPayload), &payloadMap)
 	if err != nil {
-		return fmt.Errorf("Failed to unmarshal payload JSON: %s", err.Error())
+		return fmt.Errorf("failed to unmarshal payload JSON: %s", err.Error())
 	}
 
-	filteredMap := filterMapByKeys(payloadMap, schemaPath)
+	filteredMap := FilterMapByKeys(payloadMap, schemaPath)
 
 	filteredJSON, err := json.Marshal(filteredMap)
 	if err != nil {
-		return fmt.Errorf("Failed to marshal filtered JSON: %s", err.Error())
+		return fmt.Errorf("failed to marshal filtered JSON: %s", err.Error())
 	}
 
 	filteredJSONStringResult := strings.Join(strings.Fields(string(filteredJSON)), "")
-	fmt.Println("filteredJSONStringResult: ", filteredJSONStringResult)
-	fmt.Println("recieveJSONStringResult: ", recieveJSONStringResult)
 	if filteredJSONStringResult != recieveJSONStringResult {
 		return errors.New("payload is not matched")
 	}
@@ -293,7 +262,7 @@ func CheckDPStreamDPExist(dataProduct string, payload string, event string, sche
 	return nil
 }
 
-func loadSchema(filePath string) (map[string]interface{}, error) {
+func LoadSchema(filePath string) (map[string]interface{}, error) {
 	bytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -306,8 +275,8 @@ func loadSchema(filePath string) (map[string]interface{}, error) {
 	return schema, nil
 }
 
-func filterMapByKeys(receivedMap map[string]interface{}, schemaPath string) map[string]interface{} {
-	schema, err := loadSchema(schemaPath)
+func FilterMapByKeys(receivedMap map[string]interface{}, schemaPath string) map[string]interface{} {
+	schema, err := LoadSchema(schemaPath)
 	if err != nil {
 		return nil
 	}
@@ -350,16 +319,16 @@ func CheckDPStreamDPEventHasTwoPayload(dataProduct string, payload string, paylo
 	for msg := range ch {
 		err = proto.Unmarshal(msg.Data, &pe)
 		if err != nil {
-			return fmt.Errorf("Failed to parsing product event: %v", err)
+			return fmt.Errorf("failed to parsing product event: %v", err)
 		}
 
 		r, err := pe.GetContent()
 		if err != nil {
-			return fmt.Errorf("Failed to parsing content: %v", err)
+			return fmt.Errorf("failed to parsing content: %v", err)
 		}
 		JSONByte, err := json.Marshal(r.AsMap())
 		if err != nil {
-			return fmt.Errorf("Receive payload marshal fail %s", err.Error())
+			return fmt.Errorf("receive payload marshal fail %s", err.Error())
 		}
 		recieveJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
 		regexPayload := regexp.MustCompile(`'?([^']*)'?`).FindStringSubmatch(payloadList[i])[1]
@@ -396,26 +365,6 @@ func WaitOneSecond(WaitTime string) error {
 	return nil
 }
 
-func CheckDataProductInfo(dataProduct string) error {
-	var stdout bytes.Buffer
-
-	cmd := exec.Command(testutils.GravityCliString, "product", "info", dataProduct)
-
-	cmd.Stdout = &stdout
-
-	err := cmd.Run()
-	if err != nil {
-		fmt.Println("Error executing command:", err)
-		return err
-	}
-	output := stdout.String()
-	fmt.Println("Command output:", output)
-	if err != nil {
-		return errors.New("data product info failed")
-	}
-	return nil
-}
-
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
@@ -434,7 +383,5 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has no "'(.*?)'"$`, CheckDPStreamDPNotExist)
 	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has two events with payload "'(.*?)'" and "'(.*?)'" and type is "'(.*?)'"$`, CheckDPStreamDPEventHasTwoPayload)
 	ctx.Then(`^CLI returns create failed$`, PublishEventCommandFailed)
-	ctx.Then(`^Query Jetstream GVT_default message increase$`, QueryJetstreamEventCountIncrease)
 	ctx.Then(`^Wait "'(.*?)'" second$`, WaitOneSecond)
-	ctx.Then(`^Check data product info "'(.*?)'" is enabled$`, CheckDataProductInfo)
 }

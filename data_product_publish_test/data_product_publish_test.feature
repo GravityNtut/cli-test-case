@@ -9,13 +9,10 @@ Scenario:
     Given Create data product "'drink'" using parameters "'<DPEnabled>'"
     Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
     When Publish Event "'<Event>'" using parameters "'<Payload>'"
-    Then Query Jetstream GVT_default message increase
     Then Wait "'1'" second
     When Update data product "'drink'" using parameters enabled=true
-    # Then Check data product info "'drink'" is enabled
     Then Wait "'1'" second
     When Update data product "'drink'" ruleset "'drinkEvent'" using parameters enabled=true
-    # When Publish Event "'<Event>'" using parameters "''{"id":222,"uid":1,"name":"test","price":100,"kcal":50}''"
     Then Query GVT_default_DP_"'drink'" has a event with payload "'<Payload>'" and type is "'<Event>'" and its match with "'<RSSchema>'"
     Examples:
         |   ID   | Event      |                    Payload                             | RSMethod |       RSHandler         |       RSSchema                    | RSPk     | RSEnabled | DPEnabled |
