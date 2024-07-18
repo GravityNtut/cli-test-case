@@ -1,6 +1,7 @@
 package dataproductpublish
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -51,7 +52,7 @@ func CreateDataProduct(dataProduct string, enabled string) error {
 		cmd := exec.Command(testutils.GravityCliString, "product", "create", dataProduct, "--schema", "./assets/schema.json", "-s", ut.Config.JetstreamURL)
 		return cmd.Run()
 	}
-	return errors.New("dataProduct create 參數錯誤")
+	return errors.New("dataProduct create parameters wrong")
 }
 
 func CreateDataProductRuleset(dataProduct string, ruleset string, RSMethod string, RSPk string, RSHandler string, RSSchema string, RSEnabled string) error {
@@ -92,7 +93,10 @@ type JSONData struct {
 }
 
 func QueryJetstreamEventCountIncrease() error {
-	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
+	nc, err := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
+	if err != nil {
+		return fmt.Errorf("nats connect failed %s", err.Error())
+	}
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -207,7 +211,10 @@ func UpdateRulesetCommand(dataProduct string, ruleset string) error {
 }
 
 func CheckDPStreamDPExist(dataProduct string, payload string, event string, schemaPath string) error {
-	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
+	nc, err := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
+	if err != nil {
+		return fmt.Errorf("nats connect failed %s", err.Error())
+	}
 	defer nc.Close()
 
 	js, err := nc.JetStream()
@@ -304,10 +311,10 @@ func filterMapByKeys(receivedMap map[string]interface{}, schemaPath string) map[
 	if err != nil {
 		return nil
 	}
-	
+
 	filtered := make(map[string]interface{})
 	for key := range schema {
-        if value, exists := receivedMap[key]; exists {
+		if value, exists := receivedMap[key]; exists {
 			filtered[key] = value
 		}
 	}
@@ -380,12 +387,34 @@ func PublishEventCommandFailed() error {
 	return fmt.Errorf("publish should be failed")
 }
 
-func WaitOneSecond(WaitTime string) {
+func WaitOneSecond(WaitTime string) error {
 	seconds, err := strconv.Atoi(WaitTime)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("waitTime can not convert to int")
 	}
 	time.Sleep(time.Duration(seconds) * time.Second)
+	return nil
+}
+
+func CheckDataProductInfo(dataProduct string) error {
+    var stdout bytes.Buffer
+
+    cmd := exec.Command(testutils.GravityCliString, "product", "info", dataProduct)
+
+    cmd.Stdout = &stdout
+
+    err := cmd.Run()
+    if err != nil {
+        fmt.Println("Error executing command:", err)
+        return err
+    }
+
+    output := stdout.String()
+    fmt.Println("Command output:", output)
+	if err != nil {
+		return errors.New("data product info failed")
+	}
+	return nil
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
@@ -406,6 +435,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has no "'(.*?)'"$`, CheckDPStreamDPNotExist)
 	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has two events with payload "'(.*?)'" and "'(.*?)'" and type is "'(.*?)'"$`, CheckDPStreamDPEventHasTwoPayload)
 	ctx.Then(`^CLI returns create failed$`, PublishEventCommandFailed)
-	ctx.Then(`^Query Jetstream GVT_default message Increase$`, QueryJetstreamEventCountIncrease)
+	ctx.Then(`^Query Jetstream GVT_default message increase$`, QueryJetstreamEventCountIncrease)
 	ctx.Then(`^Wait "'(.*?)'" second$`, WaitOneSecond)
+	ctx.Then(`^Check data product info "'(.*?)'" is enabled$`, CheckDataProductInfo)
 }
