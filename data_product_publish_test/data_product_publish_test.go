@@ -397,20 +397,19 @@ func WaitOneSecond(WaitTime string) error {
 }
 
 func CheckDataProductInfo(dataProduct string) error {
-    var stdout bytes.Buffer
+	var stdout bytes.Buffer
 
-    cmd := exec.Command(testutils.GravityCliString, "product", "info", dataProduct)
+	cmd := exec.Command(testutils.GravityCliString, "product", "info", dataProduct)
 
-    cmd.Stdout = &stdout
+	cmd.Stdout = &stdout
 
-    err := cmd.Run()
-    if err != nil {
-        fmt.Println("Error executing command:", err)
-        return err
-    }
-
-    output := stdout.String()
-    fmt.Println("Command output:", output)
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println("Error executing command:", err)
+		return err
+	}
+	output := stdout.String()
+	fmt.Println("Command output:", output)
 	if err != nil {
 		return errors.New("data product info failed")
 	}
