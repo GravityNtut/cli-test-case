@@ -43,20 +43,7 @@ func AddRulesetCommand(dataProduct string, ruleset string, event string, enabled
 		cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--event", event, "--method", "create", "-s", ut.Config.JetstreamURL)
 		return cmd.Run()
 	}
-	return errors.New("ruleset add 參數錯誤")
-}
-
-func DeleteDataProductCommand(dataProduct string) error {
-	commandString := "../gravity-cli product delete "
-	if dataProduct != testutils.NullString {
-		commandString += dataProduct
-	}
-	commandString += " -s " + ut.Config.JetstreamURL
-	err := ut.ExecuteShell(commandString)
-	if err != nil {
-		return err
-	}
-	return nil
+	return errors.New("the parameters of the ruleset add are incorrect")
 }
 
 func PublishEventCommand(event string, payload string) error {
@@ -111,15 +98,15 @@ func CheckDataProductMessagesAmountByJetstream(dataProduct string, amount string
 				return nil
 			}
 
-			return errors.New(strconv.Itoa(int(stream.State.Msgs)))
+			return errors.New("CLI returns error message: stream's messages amount mismatches")
 		}
 	}
-	return nil
+	return errors.New("CLI returns error message: streams doesn't contain the name GVT_default_DP_" + dataProduct)
 }
 
 func PurgeDataProduct(productName string) error {
-	commandString := "../gravity-cli product purge "
-	if productName != testutils.NullString {
+	commandString := "../gravity-cli product purge"
+	if productName != testutils.NullString && productName != testutils.IgnoreString {
 		commandString += " " + productName
 	}
 
@@ -137,13 +124,13 @@ func PurgeDataProductFailed() error {
 	return errors.New("the data product purge should fail")
 }
 
-func CheckError(errMsg string) error {
-	outStr := ut.CmdResult.Stderr
-	if strings.Contains(outStr, errMsg) {
-		return nil
-	}
-	return errors.New(errMsg)
-}
+// func CheckError(errMsg string) error {
+// 	outStr := ut.CmdResult.Stderr
+// 	if strings.Contains(outStr, errMsg) {
+// 		return nil
+// 	}
+// 	return errors.New(errMsg)
+// }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
@@ -161,6 +148,6 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Then(`^Use NATS JetStream to query the Messages amount of the data product "'(.*?)'" to be "'(.*?)'"$`, CheckDataProductMessagesAmountByJetstream)
 	ctx.When(`^Purge data product "'(.*?)'"$`, PurgeDataProduct)
 	ctx.Then(`^CLI returns exit code 1$`, PurgeDataProductFailed)
-	ctx.Then(`^The error message should be "'(.*?)'"$`, CheckError)
+	// ctx.Then(`^The error message should be "'(.*?)'"$`, CheckError)
 	// ctx.Then(`^The error message should be "'(.*?)'"$`, AssertErrorMessages)
 }

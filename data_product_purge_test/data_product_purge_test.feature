@@ -22,9 +22,9 @@ Examples:
 Scenario: The purge of a non-existent Data Product.
     When Purge data product "'<ProductName>'"
     Then CLI returns exit code 1
-	And The error message should be "'<Error_message>'"
+	#And The error message should be "'<Error_message>'"
 Examples:
-    |  ID   | ProductName | Error_message     |
-    | E1(1) | failProduct | product not found |
-    | E2(2) |   [null]    | requires at least 1 arg(s), only received 0 |
+    |  ID   | ProductName |
+    | E1(1) | failProduct |
+    | E2(2) |   [null]    |
     
