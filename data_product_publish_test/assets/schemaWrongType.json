@@ -1,0 +1,7 @@
+{
+	"id": { "type": "uint" },
+    "uid": { "type": "uint" },
+	"name": { "type": "uint" },
+	"price": { "type": "uint" },
+	"kcal": { "type": "uint" }
+}
