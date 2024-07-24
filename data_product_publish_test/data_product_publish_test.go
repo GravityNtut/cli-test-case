@@ -359,7 +359,7 @@ func PublishEventCommandFailed() error {
 func WaitOneSecond(WaitTime string) error {
 	seconds, err := strconv.Atoi(WaitTime)
 	if err != nil {
-		return fmt.Errorf("waitTime can not convert to int")
+		return fmt.Errorf("WaitTime string can not convert to int")
 	}
 	time.Sleep(time.Duration(seconds) * time.Second)
 	return nil
