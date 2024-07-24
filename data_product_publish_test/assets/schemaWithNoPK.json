@@ -1,0 +1,5 @@
+{
+	"name": { "type": "uint" },
+	"price": { "type": "uint" },
+	"kcal": { "type": "uint" }
+}
