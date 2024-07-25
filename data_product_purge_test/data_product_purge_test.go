@@ -35,24 +35,15 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
-func AddRulesetCommand(dataProduct string, ruleset string, event string, enabled string) error {
-	if enabled == testutils.TrueString {
-		cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--enabled", "--event", event, "--method", "create", "-s", ut.Config.JetstreamURL)
-		return cmd.Run()
-	} else if enabled == testutils.IgnoreString || enabled == testutils.FalseString {
-		cmd := exec.Command(testutils.GravityCliString, "product", "ruleset", "add", dataProduct, ruleset, "--event", event, "--method", "create", "-s", ut.Config.JetstreamURL)
-		return cmd.Run()
-	}
-	return errors.New("the parameters of the ruleset add are incorrect")
-}
-
-func PublishEventCommand(event string, payload string) error {
-	pubString := "../gravity-cli pub " + event + " " + payload
-	if err := ut.ExecuteShell(pubString); err != nil {
+func PublishEventCommand() error {
+	payload := `{"id":1,"uid":1,"name":"test","price":100,"kcal":50}`
+	cmd := exec.Command(testutils.GravityCliString, "pub", "test", payload)
+	if err := cmd.Run(); err != nil {
 		return err
 	}
 	return nil
 }
+
 func CheckDataProductEventAmount(dataProduct string, amount string) error {
 	cmd := testutils.GravityCliString + " product list"
 	eventIndex := 3 // Because DESCRIPTION is null
@@ -105,18 +96,18 @@ func CheckDataProductMessagesAmountByJetstream(dataProduct string, amount string
 }
 
 func PurgeDataProduct(productName string) error {
-	commandString := "../gravity-cli product purge"
-	if productName != testutils.NullString && productName != testutils.IgnoreString {
-		commandString += " " + productName
-	}
-
-	err := ut.ExecuteShell(commandString)
-	if err != nil {
+	purgeString := "../gravity-cli product purge " + productName
+	if err := ut.ExecuteShell(purgeString); err != nil {
 		return err
 	}
 	return nil
 }
-
+func PurgeDataProductSuccess() error {
+	if ut.CmdResult.Err == nil {
+		return nil
+	}
+	return errors.New("the data product purge should success")
+}
 func PurgeDataProductFailed() error {
 	if ut.CmdResult.Err != nil {
 		return nil
@@ -124,30 +115,30 @@ func PurgeDataProductFailed() error {
 	return errors.New("the data product purge should fail")
 }
 
-// func CheckError(errMsg string) error {
-// 	outStr := ut.CmdResult.Stderr
-// 	if strings.Contains(outStr, errMsg) {
-// 		return nil
-// 	}
-// 	return errors.New(errMsg)
-// }
+func CheckError(errMsg string) error {
+	outStr := ut.CmdResult.Stderr
+	if strings.Contains(outStr, errMsg) {
+		return nil
+	}
+	return errors.New("the error message is incorrect")
+}
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
-		ut.RestartDocker()
+		ut.ClearDataProducts()
 		return ctx, nil
 	})
 
 	ctx.Given(`^Nats has been opened$`, ut.CheckNatsService)
 	ctx.Given(`^Dispatcher has been opened$`, ut.CheckDispatcherService)
 	ctx.Given(`^Create data product with "'(.*?)'" using parameters "'(.*?)'"$`, ut.CreateDataProduct)
-	ctx.Given(`^Create data product ruleset with "'(.*?)'", "'(.*?)'" using parameters "'(.*?)'", "'(.*?)'"$`, AddRulesetCommand)
-	ctx.Given(`^Publish Event "'(.*?)'" using parameters "'(.*?)'"$`, PublishEventCommand)
+	ctx.Given(`^Create data product ruleset with "'(.*?)'", "'(.*?)'" using parameters "'(.*?)'"$`, ut.CreateDataProductRuleset)
+	ctx.Given(`^Publish an Event$`, PublishEventCommand)
 	ctx.Then(`^Check data product "'(.*?)'"'s Events amount is "'(.*?)'"$`, CheckDataProductEventAmount)
 	ctx.Then(`^Use NATS JetStream to query the Messages amount of the data product "'(.*?)'" to be "'(.*?)'"$`, CheckDataProductMessagesAmountByJetstream)
 	ctx.When(`^Purge data product "'(.*?)'"$`, PurgeDataProduct)
+	ctx.Then(`^Check purging data product success$`, PurgeDataProductSuccess)
 	ctx.Then(`^CLI returns exit code 1$`, PurgeDataProductFailed)
-	// ctx.Then(`^The error message should be "'(.*?)'"$`, CheckError)
-	// ctx.Then(`^The error message should be "'(.*?)'"$`, AssertErrorMessages)
+	ctx.Then(`^The error message should be "'(.*?)'"$`, CheckError)
 }
