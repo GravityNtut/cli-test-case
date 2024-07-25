@@ -15,7 +15,7 @@ Scenario: Success scenario for the deletion of an existing Data Product
     Then Use NATS JetStream to query the Messages amount of the data product "'<ProductName>'" to be "'0'"
 Examples:
     |  ID  | ProductName |
-    #| M(1) | drink       |
+    | M(1) | drink       |
 
 #Scenario: 
 Scenario: The purge of a non-existent Data Product.
