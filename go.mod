@@ -9,6 +9,7 @@ require (
 	github.com/cucumber/godog v0.13.0
 	github.com/docker/docker v25.0.3+incompatible
 	github.com/nats-io/nats.go v1.33.1
+	github.com/spf13/pflag v1.0.5
 	google.golang.org/protobuf v1.34.1
 )
 
@@ -48,7 +49,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.24.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
