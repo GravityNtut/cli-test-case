@@ -4,6 +4,7 @@ Scenario:
 Given NATS has been opened
 Given Dispatcher has been opened
 #Scenario
+	@M
 	Scenario Outline: Success scenario for creating a data product
 	When Create data product "'<ProductName>'" using parameters "'<Description>'" "'<Schema>'" "'<Enabled>'"
 	Then Cli returns "'<ProductName>'" created successfully
@@ -24,6 +25,7 @@ Given Dispatcher has been opened
 
 
 #Scenario
+	@E1
 	Scenario Outline: Create two data products with the same name
 	When Create data product "'<ProductName>'" using parameters "'<Description>'" "'<Schema>'" "'<Enabled>'"
 	Then Cli returns "'<ProductName>'" created successfully
@@ -37,6 +39,7 @@ Given Dispatcher has been opened
 	| E1(1) | drink       | description | ./assets/schema.json | [true]  |			    |
 
 #Scenario
+	@E2
 	Scenario Outline: Fail scenario for creating a data product
 	When Create data product "'<ProductName>'" using parameters "'<Description>'" "'<Schema>'" "'<Enabled>'"
     Then CLI returns exit code 1
