@@ -5,6 +5,7 @@ Scenario:
     Given Dispatcher has been opened
 
 #Scenario
+    @M
     Scenario Outline: Success scenario for adding ruleset to data product
     Given Create data product "'drink'" and enabled is "'[true]'"
     When "'<ProductName>'" add ruleset "'<Ruleset>'" using parameters "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
@@ -37,6 +38,7 @@ Scenario:
 
 
 #Scenario
+    @E1
     Scenario Outline: Scenario for repeatedly adding ruleset to data product
     Given Create data product "'drink'" and enabled is "'[true]'"
     When "'<ProductName>'" add ruleset "'<Ruleset1>'" using parameters "'<Method>'" "'<Event1>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
@@ -52,6 +54,7 @@ Scenario:
         | E1(2)| drink       | drinkCreated  | drinkCreated2  | create  | drinkCreated  | drinkCreated   |   id  |  "description"   | ./assets/handler.js | ./assets/schema.json | [true]  |                            |
         				
 #Scenario
+    @E2
     Scenario Outline: Fail scenario for adding ruleset to data product
     Given Create data product "'drink'" and enabled is "'[true]'"
     When "'<ProductName>'" add ruleset "'<Ruleset>'" using parameters "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
