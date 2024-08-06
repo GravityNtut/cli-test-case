@@ -19,27 +19,34 @@ import (
 	gravity_sdk_types_product_event "github.com/BrobridgeOrg/gravity-sdk/v2/types/product_event"
 	"github.com/cucumber/godog"
 	"github.com/nats-io/nats.go"
+	"github.com/spf13/pflag"
 	"google.golang.org/protobuf/proto"
 )
 
 var ut = testutils.TestUtils{}
 
-func TestFeatures(t *testing.T) {
+var opts = godog.Options{
+	Format:        "pretty",
+	Paths:         []string{"./"},
+	StopOnFailure: ut.Config.StopOnFailure,
+}
+
+func init() {
+	godog.BindCommandLineFlags("godog.", &opts)
+}
+
+func TestMain(m *testing.M) {
+	pflag.Parse()
 	err := ut.LoadConfig()
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
-		Options: &godog.Options{
-			Format:        "pretty",
-			Paths:         []string{"./"},
-			StopOnFailure: ut.Config.StopOnFailure,
-			TestingT:      t,
-		},
+		Options:             &opts,
 	}
 	if suite.Run() != 0 {
-		t.Fatal("non-zero status returned, failed to run feature tests")
+		log.Fatal("non-zero status returned, failed to run feature tests")
 	}
 }
 
