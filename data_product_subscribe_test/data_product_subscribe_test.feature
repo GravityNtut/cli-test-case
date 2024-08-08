@@ -1,11 +1,12 @@
 Feature: Data Product subscribe 
 
-Scenario:
-Given NATS has been opened
-Given Dispatcher has been opened
+Background: Check the NATS and Dispatcher
+    Given NATS has been opened
+    Given Dispatcher has been opened
+
 #Scenario
     @M
-	Scenario Outline:  Successful scenario. Use the `product sub` command to receive all data published to the specified data product.
+	Scenario Outline: Successful scenario. Use the `product sub` command to receive all data published to the specified data product
 	Given Create data product "'drink'"
     Given Create data product "'drink'" with ruleset "'drinkCreated'"
     Given Publish 10 Events
@@ -30,7 +31,7 @@ Given Dispatcher has been opened
 
 #Scenario
     @E1
-	Scenario Outline: Failure scenario. Use the `product sub` command to receive all data published to the specified data product.
+	Scenario Outline: Failure scenario. Use the `product sub` command to receive all data published to the specified data product
 	Given Create data product "'drink'"
     Given Create data product "'drink'" with ruleset "'drinkCreated'"
     Given Publish 10 Events

@@ -1,6 +1,6 @@
 Feature: Data Product publish
 
-Scenario:
+Background: Check the NATS and Dispatcher
     Given NATS has been opened
     Given Dispatcher has been opened
 
@@ -54,7 +54,7 @@ Scenario:
         |  M(35) | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js     | ./assets/schema.json              | id       | [false]   | [false]   |
 
     @E1
-    Scenario Outline: Similar to the successful scenario, but after publishing, update the ruleset to enabled first, then update the data product to enabled.
+    Scenario Outline: Similar to the successful scenario, but after publishing, update the ruleset to enabled first, then update the data product to enabled
     Given Create data product "'drink'" using parameters "'<DPEnabled>'"
     Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
     When Publish Event "'<Event>'" using parameters "'<Payload>'"
@@ -66,7 +66,7 @@ Scenario:
         |  E1(1) | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | create   | ./assets/handler.js | ./assets/schema.json | id   | [false]   | [false]   |
     
     @E2
-    Scenario Outline: publish for data product of the event (failure scenario for the publish command).
+    Scenario Outline: publish for data product of the event (failure scenario for the publish command)
     Given Create data product "'drink'" using parameters "'<DPEnabled>'"
     Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
     When Publish Event "'<Event>'" using parameters "'<Payload>'"
@@ -80,7 +80,7 @@ Scenario:
         |  E2(4) | drinkEvent | 'abc'                                          | create   | ./assets/handler.js | ./assets/schema.json | id   | [true]    | [true]    |
 
     @E3
-    Scenario Outline: The command executes successfully but does not publish to the specified DP.
+    Scenario Outline: The command executes successfully but does not publish to the specified DP
     Given Create data product "'drink'" using parameters "'<DPEnabled>'"
     Given "'drink'" create ruleset "'drinkEvent'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
     When Publish Event "'<Event>'" using parameters "'<Payload>'"

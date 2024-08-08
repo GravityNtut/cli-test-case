@@ -1,8 +1,9 @@
 Feature: Data Product update
 
-Scenario:
-Given NATS has been opened
-Given Dispatcher has been opened
+Background: Check the NATS and Dispatcher
+	Given NATS has been opened
+	Given Dispatcher has been opened
+
 #Scenario
 	@M
 	Scenario Outline: Success scenario for updating a data product

@@ -1,12 +1,12 @@
 Feature: Data Product purge
 
-Scenario:
+Background: Check the NATS and Dispatcher
     Given Nats has been opened
     Given Dispatcher has been opened
 
 #Scenario: 
     @M
-    Scenario: Success scenario for the deletion of an existing Data Product
+    Scenario Outline: Success scenario for the deletion of an existing Data Product
     Given  Create data product with "'<ProductName>'" using parameters "'[true]'"
     Given Create data product ruleset with "'<ProductName>'", "'drink_ruleset'" using parameters "'[true]'" 
     Given Publish an Event
@@ -20,7 +20,7 @@ Scenario:
 
 #Scenario: 
     @E1
-    Scenario: The purge of a non-existent Data Product.
+    Scenario Outline: The purge of a non-existent Data Product
     Given  Create data product with "'drink'" using parameters "'[true]'"
     Given Create data product ruleset with "'drink'", "'drink_ruleset'" using parameters "'[true]'" 
     Given Publish an Event

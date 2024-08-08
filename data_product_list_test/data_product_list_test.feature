@@ -1,8 +1,9 @@
 Feature: Data Product list
 
-Scenario:
+Background: Check the NATS and Dispatcher
     Given NATS has been opened
     Given Dispatcher has been opened
+    
 #Scenario
     @M
     Scenario Outline: Success scenario for list of data products

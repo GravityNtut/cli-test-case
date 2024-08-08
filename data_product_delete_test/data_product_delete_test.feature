@@ -1,12 +1,12 @@
 Feature: Data Product delete
 
-Scenario:
+Background: Check the NATS and Dispatcher
     Given Nats has been opened
     Given Dispatcher has been opened
 
 #Scenario: 
     @M
-    Scenario: Success scenario for the deletion of an existing Data Product
+    Scenario Outline: Success scenario for the deletion of an existing Data Product
     Given  Create data product with "'<ProductName>'" using parameters "'[true]'"
     When Delete data product "'<ProductName>'"
     Then The CLI returned the message: Product "'<ProductName>'" was deleted.
@@ -18,7 +18,7 @@ Scenario:
 
 #Scenario: 
     @E1
-    Scenario: Fail scenario for the deletion of a non-existent Data Product.
+    Scenario Outline: Fail scenario for the deletion of a non-existent Data Product
     When Delete data product "'<ProductName>'"
     Then CLI returns exit code 1
 	# And The error message should be "'<Error_message>'"

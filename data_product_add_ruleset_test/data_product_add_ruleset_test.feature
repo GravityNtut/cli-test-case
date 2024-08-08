@@ -1,6 +1,6 @@
 Feature: Data Product ruleset add
 
-Scenario:
+Background: Check the NATS and Dispatcher
     Given NATS has been opened
     Given Dispatcher has been opened
 
