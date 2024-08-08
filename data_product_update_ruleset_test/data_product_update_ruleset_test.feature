@@ -4,6 +4,7 @@ Scenario:
 Given NATS has been opened
 Given Dispatcher has been opened
 #Scenario
+	@M
 	Scenario: Success scenario for updating data product ruleset
 	Given Create data product "'drink'" and enabled is "'[true]'"
     Given Create "'drink'" ruleset "'drinkCreated'" and enabled is "'<GivenRSEnabled>'"
@@ -29,6 +30,7 @@ Given Dispatcher has been opened
 	| M(14)| drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |   [ignore]   |
 
 #Scenario
+	@E1
 	Scenario Outline: Fail scenario for updating data product ruleset
 	Given Create data product "'drink'" and enabled is "'[true]'"
     Given Create "'drink'" ruleset "'drinkCreated'" and enabled is "'[ignore]'"
