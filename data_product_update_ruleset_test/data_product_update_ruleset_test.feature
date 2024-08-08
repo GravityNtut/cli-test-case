@@ -1,10 +1,12 @@
 Feature: Data Product ruleset update
 
-Scenario:
-Given NATS has been opened
-Given Dispatcher has been opened
+Background: Check the NATS and Dispatcher
+	Given NATS has been opened
+	Given Dispatcher has been opened
+
 #Scenario
-	Scenario: Success scenario for updating data product ruleset
+	@M
+	Scenario Outline: Success scenario for updating data product ruleset
 	Given Create data product "'drink'" and enabled is "'[true]'"
     Given Create "'drink'" ruleset "'drinkCreated'" and enabled is "'<GivenRSEnabled>'"
 	When Update data product "'<ProductName>'" ruleset "'<Ruleset>'" using parameters "'<Method>'" "'<Event>'" "'<Pk>'" "'<Desc>'" "'<Handler_script>'" "'<Schema>'" "'<Enabled>'"
@@ -29,6 +31,7 @@ Given Dispatcher has been opened
 	| M(14)| drink       | drinkCreated  | [ignore]      | [ignore]  | 		[ignore]        | 		  [ignore]         | [ignore] | [ignore]      | [ignore] |   [ignore]   |
 
 #Scenario
+	@E1
 	Scenario Outline: Fail scenario for updating data product ruleset
 	Given Create data product "'drink'" and enabled is "'[true]'"
     Given Create "'drink'" ruleset "'drinkCreated'" and enabled is "'[ignore]'"

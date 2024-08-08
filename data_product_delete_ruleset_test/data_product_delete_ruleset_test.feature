@@ -1,11 +1,12 @@
 Feature: Data Product ruleset delete
 
-Scenario:
+Background: Check the NATS and Dispatcher
     Given Nats has been opened
     Given Dispatcher has been opened
 
 #Scenario
-    Scenario: Success scenario for the deletion of a data product ruleset
+    @M
+    Scenario Outline: Success scenario for the deletion of a data product ruleset
     Given Create data product with "'<ProductName>'" using parameters "'[true]'"
     Given Create data product ruleset with "'<ProductName>'", "'<RulesetName>'" using parameters "'[true]'"
     When Delete ruleset "'<RulesetName>'" for data product "'<ProductName>'"
@@ -16,7 +17,8 @@ Scenario:
         | M(1)| drink       | drinkCreated    |
 
 #Scenario
-    Scenario: Fail scenario for the deletion of a non-existent Data Product ruleset.
+    @E1
+    Scenario Outline: Fail scenario for the deletion of a non-existent Data Product ruleset
     Given Create data product with "'drink'" using parameters "'[true]'"
     Given Create data product ruleset with "'drink'", "'drinkCreated'" using parameters "'[true]'"
     When Delete ruleset "'<RulesetName>'" for data product "'<ProductName>'"

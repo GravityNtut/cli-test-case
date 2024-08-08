@@ -1,9 +1,11 @@
 Feature: Data Product list
 
-Scenario:
+Background: Check the NATS and Dispatcher
     Given NATS has been opened
     Given Dispatcher has been opened
-    #Scenario
+    
+#Scenario
+    @M
     Scenario Outline: Success scenario for list of data products
     Given Create "'<ProductAmount>'" data products with "'<ProductName>'" using parameters "'<Description>'" "'<Enabled>'"
     Given Create "'<RulesetAmount>'" rulesets for "'<ProductName>'"
@@ -18,11 +20,12 @@ Scenario:
         |  M(4) | drink       |  [a]x32768  | [true]  | 0             | 0           | 1             |
 
 #Scenario
+    @E1
     Scenario Outline: Fail scenario for list of data products
     When Listing all data products using gravity-cli
     Then CLI returns exit code 1
     And The error message should be "'<Error_message>'"
 
     Examples:
-        |  ID   | ProductAmount | Error_message         |
-        |  M(1) | 0             | No available products |
+        |  ID    | ProductAmount | Error_message         |
+        |  E1(1) | 0             | No available products |
