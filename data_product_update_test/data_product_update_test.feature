@@ -4,6 +4,7 @@ Scenario:
 Given NATS has been opened
 Given Dispatcher has been opened
 #Scenario
+	@M
 	Scenario Outline: Success scenario for updating a data product
 	Given Create data product "'drink'" and enabled is "'<GivenDPEnabled>'"
 	When Update the name of data product to "'<ProductName>'" using parameters "'<Description>'" "'<Enabled>'" "'<Schema>'"
@@ -21,6 +22,7 @@ Given Dispatcher has been opened
 	| M(8) | drink       |  description | ./assets/schema.json  | [true]    |   [false]    |
 
 #Scenario
+	@E1
 	Scenario Outline: Fail scenario for updating data product
 	Given Create data product "'drink'" and enabled is "'[true]'"
 	Given Store NATS copy of existing data product "'drink'"
