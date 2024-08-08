@@ -34,7 +34,7 @@ func init() {
 	godog.BindCommandLineFlags("godog.", &opts)
 }
 
-func TestMain(m *testing.M) {
+func TestMain(_ *testing.M) {
 	pflag.Parse()
 	err := ut.LoadConfig()
 	if err != nil {
