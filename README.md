@@ -1,2 +1,1 @@
-[![pipeline status](https://service.selab.software/gitlab/112598035/gravitytests/badges/master/pipeline.svg)](https://service.selab.software/gitlab/112598035/gravitytests/-/commits/master)
-[![coverage report](https://service.selab.software/gitlab/112598035/gravitytests/badges/master/coverage.svg)](https://service.selab.software/gitlab/112598035/gravitytests/-/commits/master)
+![example workflow](https://github.com/LittleRed945/cli-test-case/actions/workflows/main.yml/badge.svg)
