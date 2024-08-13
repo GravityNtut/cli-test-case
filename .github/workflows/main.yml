@@ -1,0 +1,27 @@
+name: Earthly Test
+run-name: ${{ github.actor }} is testing 
+on: [push]
+jobs:
+  checkout:
+    name: Checkout
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      
+  earthly:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: earthly/actions-setup@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: "latest"
+      - uses: actions/checkout@v2
+      - run:  earthly bootstrap
+      - uses: actions/checkout@v3
+      - name: Check for Earthfile file
+        run: (ls Earthfile && echo Found Earthfile) || (echo No Earthfile)
+        id: check
+
+      - name: Run Earthly and capture output
+        id: earthly
+        run: earthly --ci --output --push -P +ci
