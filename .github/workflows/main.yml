@@ -1,6 +1,9 @@
 name: Earthly Test
 run-name: ${{ github.actor }} is testing 
-on: [push]
+on:
+  pull_request:
+    branches:
+      - master 
 jobs:
   checkout:
     name: Checkout
