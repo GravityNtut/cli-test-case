@@ -5,12 +5,11 @@ on:
     branches:
       - master 
 jobs:
-  checkout:
+   checkout:
     name: Checkout
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      
+      - uses: actions/checkout@v3 
   earthly:
     runs-on: ubuntu-latest
     steps:
@@ -18,9 +17,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           version: "latest"
-      - uses: actions/checkout@v2
       - run:  earthly bootstrap
-      - uses: actions/checkout@v3
       - name: Check for Earthfile file
         run: (ls Earthfile && echo Found Earthfile) || (echo No Earthfile)
         id: check
