@@ -24,4 +24,15 @@ jobs:
 
       - name: Run Earthly and capture output
         id: earthly
-        run: earthly --ci --output --push -P +ci
+        run: |
+          output=$(earthly --ci --push -P +ci 2>&1 | grep "total:" | sed 's/.*)\s*//')
+          echo "coverage=$output" >> $GITHUB_OUTPUT
+
+      - name: Create coverage badge
+        uses: RubbaBoy/BYOB@v1.3.0
+        with:
+          NAME: coverage
+          LABEL: 'Coverage'
+          STATUS: ${{ steps.earthly.outputs.coverage }}
+          COLOR: green
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
