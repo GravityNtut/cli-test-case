@@ -1,0 +1,45 @@
+name: Earthly Test
+run-name: ${{ github.actor }} is testing 
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+jobs:
+  earthly_test:
+    runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    steps:
+      - uses: earthly/actions-setup@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: "latest"
+      - uses: earthly/actions-setup@v1
+        with:
+          version: v0.8.14
+      - uses: actions/checkout@v2
+      - name: Docker Login
+        run: docker login --username "$DOCKERHUB_USERNAME" --password "$DOCKERHUB_TOKEN"
+      - run:  earthly bootstrap
+      - name: Check for Earthfile file
+        run: (ls Earthfile && echo Found Earthfile) || (echo No Earthfile)
+        id: check
+
+      - name: Run Earthly and capture output
+        id: earthly
+        run: |
+          output=$(earthly --ci --push -P +ci 2>&1)
+          echo "$output"
+          coverage=$(echo "$output" | grep "total:" | sed 's/.*)\s*//')
+          echo "coverage=$coverage" >> $GITHUB_OUTPUT
+
+      - name: Create coverage badge
+        uses: RubbaBoy/BYOB@v1.3.0
+        with:
+          NAME: coverage
+          LABEL: 'Coverage'
+          STATUS: ${{ steps.earthly.outputs.coverage }}
+          COLOR: green
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
