@@ -1,10 +1,15 @@
 name: Earthly Test
 run-name: ${{ github.actor }} is testing 
+
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+
+permissions:
+  contents: write
+
 jobs:
   earthly_test:
     runs-on: ubuntu-latest
