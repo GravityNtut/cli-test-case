@@ -372,6 +372,55 @@ func WaitOneSecond(WaitTime string) error {
 	return nil
 }
 
+func CheckDPPayloadNotCombine() error {
+	nc, _ := nats.Connect(testutils.NatsProtocol + ut.Config.JetstreamURL)
+	defer nc.Close()
+
+	js, err := nc.JetStream()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var pe gravity_sdk_types_product_event.ProductEvent
+
+	ch := make(chan *nats.Msg, 10)
+	if _, err := js.ChanSubscribe("$GVT.default.DP.drink.*.EVENT.>", ch); err != nil {
+		return fmt.Errorf("subscribe failed %s", err.Error())
+	}
+
+	var msg *nats.Msg
+
+	for i := 1; i <= 3; i++ {
+		select {
+		case msg = <-ch:
+
+		case <-time.After(10 * time.Second):
+			return errors.New("subscribe out of time")
+		}
+
+		err = proto.Unmarshal(msg.Data, &pe)
+		if err != nil {
+			return fmt.Errorf("failed to parsing product event: %v", err)
+		}
+
+		r, err := pe.GetContent()
+		if err != nil {
+			return fmt.Errorf("failed to parsing content: %v", err)
+		}
+
+		JSONByte, err := json.Marshal(r.AsMap())
+		if err != nil {
+			return fmt.Errorf("receive payload marshal fail %s", err.Error())
+		}
+		recieveJSONStringResult := strings.Join(strings.Fields(string(JSONByte)), "")
+		expectedString := fmt.Sprintf("{\"id\":%d}", i)
+		if recieveJSONStringResult != expectedString {
+			return fmt.Errorf("payload%d is not matched, expected: %s, actual: %s", i, expectedString, recieveJSONStringResult)
+		}
+	}
+	close(ch)
+	return nil
+}
+
 func InitializeScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Before(func(ctx context.Context, _ *godog.Scenario) (context.Context, error) {
@@ -391,4 +440,5 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Then(`^Query GVT_default_DP_"'(.*?)'" has two events with payload "'(.*?)'" and "'(.*?)'" and type is "'(.*?)'"$`, CheckDPStreamDPEventHasTwoPayload)
 	ctx.Then(`^CLI returns create failed$`, PublishEventCommandFailed)
 	ctx.Then(`^Wait "'(.*?)'" second$`, WaitOneSecond)
+	ctx.Then(`Query GVT_default_DP_drink has 3 events in sequence: {"id":1}, {"id":2}, and {"id":3}`, CheckDPPayloadNotCombine)
 }

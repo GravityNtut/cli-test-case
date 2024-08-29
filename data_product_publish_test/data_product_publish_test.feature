@@ -133,3 +133,16 @@ Background: Check the NATS and Dispatcher
     Examples:
         |    ID   |    Event   |                    Payload                             |         Payload2                 | RSMethod |         RSHandler           |               RSSchema            |    RSPk    | RSEnabled |    DPEnabled    |
         |  E5(1)  | drinkEvent | '{"id":1,"uid":1,"name":"test","price":100,"kcal":50}' | '{"id":1,"uid":222,"name":"replace"}' |  create  |      assets/handler.js      |          assets/schema.json       |    id      |  [true]   |      [true]     |
+    
+    @E6
+    Scenario Outline: verify that payloads are not combined during rapid consecutive event publishing
+    Given Create data product "'drink'" using parameters "'<DPEnabled>'"
+    Given "'drink'" create ruleset "'drinkCreated'" using parameters "'<RSMethod>'" "'<RSPk>'" "'<RSHandler>'" "'<RSSchema>'" "'<RSEnabled>'"
+    When Publish Event "'<Event>'" using parameters "'{\"id\":1}'"
+    When Publish Event "'<Event>'" using parameters "'{\"name\":\"test\"}'"
+    When Publish Event "'<Event>'" using parameters "'{\"id\":2}'"
+    When Publish Event "'<Event>'" using parameters "'{\"id\":3}'"
+    Then Query GVT_default_DP_drink has 3 events in sequence: {"id":1}, {"id":2}, and {"id":3}
+    Examples:
+        | Event        | RSMethod |       RSHandler         |       RSSchema                    | RSPk     | RSEnabled | DPEnabled |
+        | drinkCreated | create   | ./assets/handler.js     | ./assets/schema.json              | id       | [true]    | [true]    |
