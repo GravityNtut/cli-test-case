@@ -26,6 +26,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Docker Login
         run: docker login --username "${{ env.USER_NAME }}" --password "${{ env.PASSWORD }}"
+      - run: echo "${{ env.USER_NAME }}" 
       - run:  earthly bootstrap
       - name: Check for Earthfile file
         run: (ls Earthfile && echo Found Earthfile) || (echo No Earthfile)
