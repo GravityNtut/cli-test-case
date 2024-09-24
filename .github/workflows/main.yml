@@ -9,7 +9,9 @@ on:
 
 permissions:
   contents: write
-
+env:
+  USER_NAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  PASSWORD:  ${{ secrets.DOCKERHUB_TOKEN }}
 jobs:
   earthly_test:
     runs-on: ubuntu-latest
@@ -23,7 +25,7 @@ jobs:
           version: v0.8.14
       - uses: actions/checkout@v2
       - name: Docker Login
-        run: docker login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password "${{ secrets.DOCKERHUB_TOKEN }}"
+        run: docker login --username "${{ env.USER_NAME }}" --password "${{ env.PASSWORD }}"
       - run:  earthly bootstrap
       - name: Check for Earthfile file
         run: (ls Earthfile && echo Found Earthfile) || (echo No Earthfile)
