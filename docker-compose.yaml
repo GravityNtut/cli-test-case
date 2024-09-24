@@ -1,5 +1,3 @@
-version: '1'
-
 services:
   nats-jetstream:
     image: "nats:2.10.11-alpine3.19"
@@ -15,7 +13,7 @@ services:
       - nats
 
   gravity-dispatcher:
-    image: "gravityntut/dispatcher:latest"
+    image: "ghcr.io/brobridgeorg/gravity-dispatcher:v0.0.4-20240923"
     # restart: always
     container_name: "gravity-dispatcher"
     environment:
