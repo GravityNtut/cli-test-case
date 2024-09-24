@@ -14,7 +14,7 @@ env:
   PASSWORD:  ${{ secrets.DOCKERHUB_TOKEN }}
 jobs:
   earthly_test:
-    environment: CI 
+    environment: earthly_test 
     runs-on: ubuntu-latest
     steps:
       - uses: earthly/actions-setup@v1
